@@ -1,0 +1,37 @@
+[package]
+name = "mira"
+version = "0.1.0"
+description = "Motion-like auto-scheduling with Jira, Google Calendar, and GitHub PR sync"
+authors = ["you"]
+license = "MIT"
+repository = ""
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.3", features = [] }
+
+[dependencies]
+tauri = { version = "2.9.5", features = [] }
+tauri-plugin-log = "2"
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+keyring = "3"
+chrono = { version = "0.4", features = ["serde"] }
+log = "0.4"
+thiserror = "1"
+dirs = "5"
+time = "=0.3.41"
+urlencoding = "2"
+rand = "0.8"
+sha2 = "0.10"
+base64 = "0.22"
+uuid = { version = "1", features = ["v4"] }
+regex = "1"
