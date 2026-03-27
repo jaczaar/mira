@@ -1,5 +1,6 @@
 <script lang="ts">
   import Header from "./lib/components/Header.svelte";
+  import ChatWidget from "./lib/components/ChatWidget.svelte";
   import Dashboard from "./routes/Dashboard.svelte";
   import SettingsPage from "./routes/SettingsPage.svelte";
   import About from "./routes/About.svelte";
@@ -23,6 +24,8 @@
       <About />
     {/if}
   </div>
+
+  <ChatWidget repoPath="." />
 </main>
 
 <style>

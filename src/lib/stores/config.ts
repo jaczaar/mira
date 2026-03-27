@@ -16,6 +16,7 @@ export interface AppConfig {
   // GitHub configuration
   github_username: string;
   pr_event_title_template: string;
+  pr_default_event_color: string | null;
 }
 
 const defaultConfig: AppConfig = {
@@ -32,6 +33,7 @@ const defaultConfig: AppConfig = {
   default_event_color: null,
   github_username: "",
   pr_event_title_template: "[PR Review] {repo}: {title}",
+  pr_default_event_color: null,
 };
 
 export const config = writable<AppConfig>(defaultConfig);

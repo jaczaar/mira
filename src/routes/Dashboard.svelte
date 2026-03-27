@@ -4,7 +4,6 @@
   import SyncControls from "../lib/components/SyncControls.svelte";
   import Notifications from "../lib/components/Notifications.svelte";
   import TaskScheduler from "../lib/components/TaskScheduler.svelte";
-  import PRCard from "../lib/components/PRCard.svelte";
   import PRList from "../lib/components/PRList.svelte";
   import PRScheduler from "../lib/components/PRScheduler.svelte";
   import JiraLinkModal from "../lib/components/JiraLinkModal.svelte";

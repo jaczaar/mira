@@ -1,26 +1,26 @@
+pub mod claude;
 pub mod config;
 pub mod github;
 pub mod google;
 pub mod jira;
 
+use claude::{
+    cancel_chat_message, check_claude_installed, discard_changes, get_changes_diff,
+    send_chat_message, start_chat_session, stop_chat_session, submit_pr, ChatState,
+};
 use config::{
     delete_github_token, delete_jira_token, get_config, get_github_token, get_jira_token,
     has_github_token, has_jira_token, save_config, save_github_token, save_jira_token,
 };
 use github::{get_pull_requests, test_github_connection};
 use google::{
-    google_auth_start,
-    google_auth_status,
-    google_auth_wait,
-    google_auth_sign_out,
-    google_create_event,
-    google_delete_event,
-    google_list_calendars,
-    google_list_events,
-    google_update_event,
-    AuthState,
+    google_auth_sign_out, google_auth_start, google_auth_status, google_auth_wait,
+    google_create_event, google_delete_event, google_list_calendars, google_list_events,
+    google_update_event, AuthState,
 };
-use jira::{create_worklog, get_assigned_issues, get_issue_status, search_issues, test_jira_connection};
+use jira::{
+    create_worklog, get_assigned_issues, get_issue_status, search_issues, test_jira_connection,
+};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -37,6 +37,7 @@ pub fn run() {
             Ok(())
         })
         .manage(AuthState::default())
+        .manage(ChatState::default())
         .invoke_handler(tauri::generate_handler![
             // Config commands
             get_config,
@@ -68,6 +69,15 @@ pub fn run() {
             google_create_event,
             google_update_event,
             google_delete_event,
+            // Claude chat commands
+            check_claude_installed,
+            start_chat_session,
+            send_chat_message,
+            cancel_chat_message,
+            stop_chat_session,
+            get_changes_diff,
+            submit_pr,
+            discard_changes,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

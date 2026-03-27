@@ -251,3 +251,72 @@ export async function deleteGitHubToken(): Promise<void> {
 export async function hasGitHubToken(): Promise<boolean> {
   return invoke<boolean>("has_github_token");
 }
+
+// Claude chat types
+export interface ClaudeInfo {
+  path: string;
+  version: string;
+}
+
+export interface ChatStreamEvent {
+  session_id: string;
+  event_type: string;
+  data: string;
+}
+
+export interface DiffFile {
+  path: string;
+  status: string;
+  diff: string;
+}
+
+export interface ChangeDiff {
+  files: DiffFile[];
+  summary: string;
+}
+
+export interface PRResult {
+  url: string;
+  number: number;
+  branch: string;
+}
+
+// Claude chat commands
+export async function checkClaudeInstalled(): Promise<ClaudeInfo> {
+  return invoke<ClaudeInfo>("check_claude_installed");
+}
+
+export async function startChatSession(repoPath: string): Promise<string> {
+  return invoke<string>("start_chat_session", { repoPath });
+}
+
+export async function sendChatMessage(
+  sessionId: string,
+  message: string
+): Promise<void> {
+  return invoke("send_chat_message", { sessionId, message });
+}
+
+export async function cancelChatMessage(sessionId: string): Promise<void> {
+  return invoke("cancel_chat_message", { sessionId });
+}
+
+export async function stopChatSession(sessionId: string): Promise<void> {
+  return invoke("stop_chat_session", { sessionId });
+}
+
+export async function getChangesDiff(sessionId: string): Promise<ChangeDiff> {
+  return invoke<ChangeDiff>("get_changes_diff", { sessionId });
+}
+
+export async function submitPR(
+  sessionId: string,
+  title: string,
+  body: string
+): Promise<PRResult> {
+  return invoke<PRResult>("submit_pr", { sessionId, title, body });
+}
+
+export async function discardChanges(sessionId: string): Promise<void> {
+  return invoke("discard_changes", { sessionId });
+}
