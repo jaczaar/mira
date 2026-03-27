@@ -39,13 +39,13 @@
     switch (status) {
       case "added":
       case "untracked":
-        return "#34c759";
+        return "var(--accent-green)";
       case "deleted":
-        return "#ff3b30";
+        return "var(--accent-red)";
       case "modified":
-        return "#ff9500";
+        return "var(--accent-amber)";
       default:
-        return "#86868b";
+        return "var(--text-tertiary)";
     }
   }
 </script>
@@ -82,27 +82,28 @@
 
 <style>
   .diff-viewer {
-    background: #fafafa;
-    border: 1px solid #e5e5e5;
-    border-radius: 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
     overflow: hidden;
     font-size: 12px;
   }
 
   .diff-header {
     padding: 10px 12px;
-    background: #f5f5f7;
-    border-bottom: 1px solid #e5e5e5;
+    background: var(--bg-hover);
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .diff-header strong {
     display: block;
     font-size: 13px;
     margin-bottom: 2px;
+    color: var(--text-primary);
   }
 
   .diff-summary {
-    color: #86868b;
+    color: var(--text-tertiary);
     font-size: 11px;
   }
 
@@ -112,7 +113,7 @@
   }
 
   .diff-file {
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .file-header {
@@ -126,88 +127,95 @@
     cursor: pointer;
     font-size: 12px;
     text-align: left;
+    color: var(--text-primary);
+    transition: background 0.1s;
   }
 
   .file-header:hover {
-    background: #f0f0f2;
+    background: var(--bg-hover);
   }
 
   .status-icon {
     font-weight: 700;
-    font-family: monospace;
+    font-family: var(--font-mono);
     width: 14px;
     text-align: center;
   }
 
   .file-path {
     flex: 1;
-    font-family: monospace;
-    color: #1d1d1f;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-secondary);
   }
 
   .expand-icon {
-    color: #86868b;
+    color: var(--text-tertiary);
     font-size: 10px;
   }
 
   .diff-content {
     margin: 0;
     padding: 8px 12px;
-    background: #1d1d1f;
-    font-family: monospace;
+    background: var(--bg-base);
+    font-family: var(--font-mono);
     font-size: 11px;
-    line-height: 1.4;
+    line-height: 1.5;
     overflow-x: auto;
     max-height: 150px;
     overflow-y: auto;
   }
 
   .diff-add {
-    color: #34c759;
+    color: var(--accent-green);
   }
 
   .diff-remove {
-    color: #ff6b6b;
+    color: var(--accent-red);
   }
 
   .diff-context {
-    color: #86868b;
+    color: var(--text-tertiary);
   }
 
   .diff-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     padding: 10px 12px;
-    border-top: 1px solid #e5e5e5;
+    border-top: 1px solid var(--border-subtle);
   }
 
   .btn-approve {
     flex: 1;
     padding: 6px 12px;
-    background: #34c759;
-    color: white;
-    border: none;
-    border-radius: 6px;
+    background: var(--accent-green-dim);
+    color: var(--accent-green);
+    border: 1px solid rgba(74, 222, 128, 0.2);
+    border-radius: var(--radius-sm);
     cursor: pointer;
+    font-family: var(--font-body);
     font-size: 12px;
     font-weight: 600;
+    transition: all 0.15s;
   }
 
   .btn-approve:hover {
-    background: #2db84d;
+    background: rgba(74, 222, 128, 0.2);
   }
 
   .btn-discard {
     padding: 6px 12px;
-    background: none;
-    color: #ff3b30;
-    border: 1px solid #ff3b30;
-    border-radius: 6px;
+    background: transparent;
+    color: var(--accent-red);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    border-radius: var(--radius-sm);
     cursor: pointer;
+    font-family: var(--font-body);
     font-size: 12px;
+    transition: all 0.15s;
   }
 
   .btn-discard:hover {
-    background: #fff3f3;
+    background: var(--accent-red-dim);
   }
 </style>

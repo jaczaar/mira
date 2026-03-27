@@ -42,36 +42,50 @@
 <div class="sync-controls">
   <div class="main-actions">
     <button
-      class="refresh-btn"
+      class="action-btn refresh"
       onclick={handleRefresh}
       disabled={$syncState.status === "syncing" || !$hasToken}
     >
-      Refresh Tasks
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10" />
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+      </svg>
+      Refresh
     </button>
 
     <button
-      class="sync-btn"
+      class="action-btn sync"
       onclick={handleSyncToCalendar}
       disabled={$syncState.status === "syncing" || !canSync}
     >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+      </svg>
       {$syncState.status === "syncing" ? "Syncing..." : "Sync to Calendar"}
     </button>
 
     <button
-      class="worklog-btn"
+      class="action-btn worklog"
       onclick={() => (showWorklogPanel = !showWorklogPanel)}
       disabled={$syncState.status === "syncing" || !canSync}
     >
-      Log Time to Jira
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+      Log Time
     </button>
   </div>
 
   {#if showWorklogPanel}
     <div class="worklog-panel">
-      <h4>Sync Calendar Events as Jira Worklogs</h4>
-      <p class="hint">
-        This will find calendar events matching Jira task patterns and log them as work time.
-      </p>
+      <div class="panel-header">
+        <h4>Sync Calendar to Jira Worklogs</h4>
+        <span class="hint">Match calendar events to Jira tasks and log work time</span>
+      </div>
 
       <div class="date-range">
         <div class="date-input">
@@ -85,10 +99,10 @@
       </div>
 
       <div class="panel-actions">
-        <button class="sync-worklogs" onclick={handleSyncWorklogs}>
+        <button class="action-btn sync" onclick={handleSyncWorklogs}>
           Sync Worklogs
         </button>
-        <button class="cancel" onclick={() => (showWorklogPanel = false)}>
+        <button class="action-btn ghost" onclick={() => (showWorklogPanel = false)}>
           Cancel
         </button>
       </div>
@@ -104,19 +118,28 @@
         ></div>
       </div>
       <span class="progress-text">
-        {$syncState.progress} / {$syncState.total}
+        {$syncState.progress}/{$syncState.total}
       </span>
     </div>
   {/if}
 
   {#if $syncState.lastSync}
-    <p class="last-sync">Last sync: {new Date($syncState.lastSync).toLocaleString()}</p>
+    <p class="last-sync">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+      Last sync: {new Date($syncState.lastSync).toLocaleString()}
+    </p>
   {/if}
 
   {#if !canSync}
     <p class="warning">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+      </svg>
       {#if !$hasToken}
-        Configure your Jira credentials in Settings to enable sync.
+        Configure Jira credentials in Settings to enable sync.
       {:else if !$googleAccount}
         Connect Google Calendar in Settings to enable sync.
       {:else if !$config.selected_calendar}
@@ -128,83 +151,99 @@
 
 <style>
   .sync-controls {
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 0 0 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .main-actions {
     display: flex;
-    gap: 12px;
+    gap: 8px;
     flex-wrap: wrap;
   }
 
-  button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s var(--ease-out);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
   }
 
-  button:disabled {
-    opacity: 0.5;
+  .action-btn:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+    border-color: var(--border-strong);
+  }
+
+  .action-btn:disabled {
+    opacity: 0.35;
     cursor: not-allowed;
   }
 
-  .refresh-btn {
-    background: #f5f5f7;
-    color: #1d1d1f;
+  .action-btn.sync {
+    background: var(--accent-blue-dim);
+    border-color: rgba(91, 141, 239, 0.2);
+    color: var(--accent-blue);
   }
 
-  .refresh-btn:hover:not(:disabled) {
-    background: #e8e8ed;
+  .action-btn.sync:hover:not(:disabled) {
+    background: rgba(91, 141, 239, 0.2);
+    border-color: rgba(91, 141, 239, 0.35);
+    box-shadow: var(--shadow-glow-blue);
   }
 
-  .sync-btn {
-    background: #0071e3;
-    color: white;
+  .action-btn.worklog {
+    background: var(--accent-green-dim);
+    border-color: rgba(74, 222, 128, 0.15);
+    color: var(--accent-green);
   }
 
-  .sync-btn:hover:not(:disabled) {
-    background: #0077ed;
+  .action-btn.worklog:hover:not(:disabled) {
+    background: rgba(74, 222, 128, 0.18);
+    border-color: rgba(74, 222, 128, 0.3);
   }
 
-  .worklog-btn {
-    background: #34c759;
-    color: white;
-  }
-
-  .worklog-btn:hover:not(:disabled) {
-    background: #30d158;
+  .action-btn.ghost {
+    background: transparent;
+    border-color: var(--border-default);
+    color: var(--text-secondary);
   }
 
   .worklog-panel {
-    margin-top: 16px;
+    margin-top: 14px;
     padding: 16px;
-    background: #f5f5f7;
-    border-radius: 8px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    animation: fadeInUp 0.25s var(--ease-out);
   }
 
-  .worklog-panel h4 {
-    margin: 0 0 8px;
-    font-size: 15px;
+  .panel-header h4 {
+    margin: 0 0 4px;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
   }
 
-  .worklog-panel .hint {
-    font-size: 13px;
-    color: #86868b;
-    margin-bottom: 16px;
+  .hint {
+    font-size: 12px;
+    color: var(--text-tertiary);
   }
 
   .date-range {
     display: flex;
-    gap: 16px;
-    margin-bottom: 16px;
+    gap: 12px;
+    margin: 14px 0;
   }
 
   .date-input {
@@ -213,17 +252,30 @@
 
   .date-input label {
     display: block;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     margin-bottom: 4px;
   }
 
   .date-input input {
     width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #d2d2d7;
-    border-radius: 6px;
-    font-size: 14px;
+    padding: 7px 10px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color-scheme: dark;
+  }
+
+  .date-input input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px var(--accent-blue-dim);
   }
 
   .panel-actions {
@@ -231,55 +283,55 @@
     gap: 8px;
   }
 
-  .sync-worklogs {
-    background: #34c759;
-    color: white;
-  }
-
-  .cancel {
-    background: #e5e5e5;
-    color: #1d1d1f;
-  }
-
   .progress {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-top: 16px;
+    gap: 10px;
+    margin-top: 14px;
   }
 
   .progress-bar {
     flex: 1;
-    height: 6px;
-    background: #e5e5e5;
-    border-radius: 3px;
+    height: 4px;
+    background: var(--bg-hover);
+    border-radius: 2px;
     overflow: hidden;
   }
 
   .progress-fill {
     height: 100%;
-    background: #0071e3;
-    transition: width 0.3s;
+    background: var(--gradient-brand);
+    transition: width 0.4s var(--ease-out);
+    border-radius: 2px;
   }
 
   .progress-text {
-    font-size: 12px;
-    color: #86868b;
-    min-width: 60px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    min-width: 40px;
+    text-align: right;
   }
 
   .last-sync {
-    margin-top: 12px;
-    font-size: 12px;
-    color: #86868b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 10px 0 0;
+    font-size: 11px;
+    color: var(--text-tertiary);
   }
 
   .warning {
-    margin-top: 12px;
-    font-size: 13px;
-    color: #ff9500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 0;
+    font-size: 12px;
+    color: var(--accent-amber);
     padding: 8px 12px;
-    background: #fff9e6;
-    border-radius: 6px;
+    background: var(--accent-amber-dim);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(251, 191, 36, 0.15);
   }
 </style>

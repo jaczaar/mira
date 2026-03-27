@@ -82,15 +82,18 @@ pub async fn cancel_chat_message(
     session_id: String,
     state: tauri::State<'_, ChatState>,
 ) -> Result<(), ClaudeError> {
-    let mut sessions = state
-        .sessions
-        .lock()
-        .map_err(|e| ClaudeError::ProcessError(e.to_string()))?;
+    let child = {
+        let mut sessions = state
+            .sessions
+            .lock()
+            .map_err(|e| ClaudeError::ProcessError(e.to_string()))?;
+        sessions
+            .get_mut(&session_id)
+            .and_then(|s| s.active_process.take())
+    };
 
-    if let Some(session) = sessions.get_mut(&session_id) {
-        if let Some(mut child) = session.active_process.take() {
-            let _ = child.kill().await;
-        }
+    if let Some(mut child) = child {
+        let _ = child.kill().await;
     }
 
     Ok(())
@@ -101,15 +104,18 @@ pub async fn stop_chat_session(
     session_id: String,
     state: tauri::State<'_, ChatState>,
 ) -> Result<(), ClaudeError> {
-    let mut sessions = state
-        .sessions
-        .lock()
-        .map_err(|e| ClaudeError::ProcessError(e.to_string()))?;
+    let child = {
+        let mut sessions = state
+            .sessions
+            .lock()
+            .map_err(|e| ClaudeError::ProcessError(e.to_string()))?;
+        sessions
+            .remove(&session_id)
+            .and_then(|mut s| s.active_process.take())
+    };
 
-    if let Some(mut session) = sessions.remove(&session_id) {
-        if let Some(mut child) = session.active_process.take() {
-            let _ = child.kill().await;
-        }
+    if let Some(mut child) = child {
+        let _ = child.kill().await;
     }
 
     Ok(())

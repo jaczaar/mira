@@ -9,21 +9,20 @@
   let { status, message = null }: Props = $props();
 
   const statusConfig = $derived({
-    idle: { label: "Ready", color: "#86868b", bg: "#f5f5f7" },
-    syncing: { label: "Syncing...", color: "#0071e3", bg: "#e8f4fd" },
-    success: { label: "Synced", color: "#34c759", bg: "#e8f8ec" },
-    error: { label: "Error", color: "#ff3b30", bg: "#ffebea" },
+    idle: { label: "Ready", color: "var(--text-tertiary)", bg: "var(--bg-elevated)", dot: "var(--text-tertiary)" },
+    syncing: { label: "Syncing", color: "var(--accent-blue)", bg: "var(--accent-blue-dim)", dot: "var(--accent-blue)" },
+    success: { label: "Synced", color: "var(--accent-green)", bg: "var(--accent-green-dim)", dot: "var(--accent-green)" },
+    error: { label: "Error", color: "var(--accent-red)", bg: "var(--accent-red-dim)", dot: "var(--accent-red)" },
   }[status]);
 </script>
 
 <div
   class="badge"
-  style="--badge-color: {statusConfig.color}; --badge-bg: {statusConfig.bg}"
+  class:syncing={status === "syncing"}
+  style="--badge-color: {statusConfig.color}; --badge-bg: {statusConfig.bg}; --badge-dot: {statusConfig.dot}"
   title={message || statusConfig.label}
 >
-  {#if status === "syncing"}
-    <span class="spinner"></span>
-  {/if}
+  <span class="dot"></span>
   <span class="label">{statusConfig.label}</span>
 </div>
 
@@ -33,25 +32,26 @@
     align-items: center;
     gap: 6px;
     padding: 4px 10px;
-    border-radius: 12px;
+    border-radius: var(--radius-full);
     background: var(--badge-bg);
     color: var(--badge-color);
-    font-size: 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
     font-weight: 500;
+    letter-spacing: 0.02em;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    transition: all 0.3s var(--ease-out);
   }
 
-  .spinner {
-    width: 12px;
-    height: 12px;
-    border: 2px solid var(--badge-color);
-    border-top-color: transparent;
+  .dot {
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    background: var(--badge-dot);
+    transition: background 0.3s;
   }
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+  .badge.syncing .dot {
+    animation: pulse 1.2s ease-in-out infinite;
   }
 </style>

@@ -18,6 +18,8 @@ use google::{
     google_create_event, google_delete_event, google_list_calendars, google_list_events,
     google_update_event, AuthState,
 };
+use tauri::menu::{MenuBuilder, SubmenuBuilder};
+use tauri::Emitter;
 use jira::{
     create_worklog, get_assigned_issues, get_issue_status, search_issues, test_jira_connection,
 };
@@ -34,6 +36,29 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            let app_submenu = SubmenuBuilder::new(app, "Mira")
+                .about(None)
+                .separator()
+                .text("settings", "Settings")
+                .separator()
+                .quit()
+                .build()?;
+
+            let menu = MenuBuilder::new(app).item(&app_submenu).build()?;
+
+            app.set_menu(menu)?;
+
+            let handle = app.handle().clone();
+            app.on_menu_event(move |_app, event| {
+                match event.id().as_ref() {
+                    "settings" => {
+                        let _ = handle.emit("menu-navigate", "settings");
+                    }
+                    _ => {}
+                }
+            });
+
             Ok(())
         })
         .manage(AuthState::default())

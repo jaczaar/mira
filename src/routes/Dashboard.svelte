@@ -3,12 +3,14 @@
   import TaskList from "../lib/components/TaskList.svelte";
   import SyncControls from "../lib/components/SyncControls.svelte";
   import Notifications from "../lib/components/Notifications.svelte";
+  import StatusBadge from "../lib/components/StatusBadge.svelte";
   import TaskScheduler from "../lib/components/TaskScheduler.svelte";
   import PRList from "../lib/components/PRList.svelte";
   import PRScheduler from "../lib/components/PRScheduler.svelte";
   import JiraLinkModal from "../lib/components/JiraLinkModal.svelte";
   import { loadAssignedTasks, tasks } from "../lib/stores/tasks";
   import { loadConfig, config, hasToken } from "../lib/stores/config";
+  import { syncState } from "../lib/stores/sync";
   import {
     pullRequests,
     prsLoading,
@@ -41,7 +43,6 @@
     }
   });
 
-  // Combined and filtered work items
   type WorkItem =
     | { type: "task"; item: SyncedTask }
     | { type: "pr"; item: ScheduledPR };
@@ -49,7 +50,6 @@
   const filteredItems = $derived.by((): WorkItem[] => {
     let items: WorkItem[] = [];
 
-    // Add tasks
     if (viewFilter !== "prs") {
       const taskItems: WorkItem[] = $tasks
         .filter((t) => t.status_category !== "done")
@@ -57,7 +57,6 @@
       items = [...items, ...taskItems];
     }
 
-    // Add PRs
     if (viewFilter !== "tasks") {
       const prItems: WorkItem[] = $pullRequests.map((pr) => ({
         type: "pr" as const,
@@ -66,7 +65,6 @@
       items = [...items, ...prItems];
     }
 
-    // Apply additional filters
     if (viewFilter === "scheduled") {
       items = items.filter((item) =>
         item.type === "task"
@@ -81,7 +79,6 @@
       );
     }
 
-    // Sort by updated date (most recent first)
     items.sort((a, b) => {
       const getUpdated = (item: WorkItem): string => {
         if (item.type === "task") {
@@ -151,46 +148,65 @@
 <div class="dashboard">
   <Notifications />
 
-  <h1>Dashboard</h1>
+  <div class="page-header">
+    <div class="title-row">
+      <h1>Mira</h1>
+      <StatusBadge status={$syncState.status} message={$syncState.message} />
+    </div>
+    <div class="stats-row">
+      {#if $hasToken}
+        <span class="stat"><span class="stat-value">{taskCount}</span> tasks</span>
+      {/if}
+      {#if $hasGitHubToken}
+        <span class="stat"><span class="stat-value">{prCount}</span> PRs</span>
+      {/if}
+      <span class="stat"><span class="stat-value accent">{scheduledCount}</span> scheduled</span>
+    </div>
+  </div>
 
   {#if !$hasToken && !$hasGitHubToken}
     <div class="setup-prompt">
-      <h2>Welcome to Mira!</h2>
+      <div class="setup-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      </div>
+      <h2>Welcome to Mira</h2>
       <p>Get started by configuring your connections in Settings.</p>
-      <p>
-        You can connect to Jira (for tasks) and/or GitHub (for PR reviews).
-      </p>
+      <p class="sub">Connect to Jira for tasks and/or GitHub for PR reviews.</p>
     </div>
   {:else}
     <SyncControls />
 
-    <!-- Filter tabs -->
     <div class="filter-tabs">
       <button
         class="filter-tab"
         class:active={viewFilter === "all"}
         onclick={() => (viewFilter = "all")}
       >
-        All ({taskCount + prCount})
+        All
+        <span class="count">{taskCount + prCount}</span>
       </button>
       {#if $hasToken}
         <button
-          class="filter-tab task-tab"
+          class="filter-tab"
           class:active={viewFilter === "tasks"}
           onclick={() => (viewFilter = "tasks")}
         >
-          <span class="tab-badge task">Tasks</span>
-          {taskCount}
+          <span class="dot task"></span>
+          Tasks
+          <span class="count">{taskCount}</span>
         </button>
       {/if}
       {#if $hasGitHubToken}
         <button
-          class="filter-tab pr-tab"
+          class="filter-tab"
           class:active={viewFilter === "prs"}
           onclick={() => (viewFilter = "prs")}
         >
-          <span class="tab-badge pr">PRs</span>
-          {prCount}
+          <span class="dot pr"></span>
+          PRs
+          <span class="count">{prCount}</span>
         </button>
       {/if}
       <button
@@ -198,7 +214,8 @@
         class:active={viewFilter === "scheduled"}
         onclick={() => (viewFilter = "scheduled")}
       >
-        Scheduled ({scheduledCount})
+        Scheduled
+        <span class="count">{scheduledCount}</span>
       </button>
       <button
         class="filter-tab"
@@ -209,37 +226,44 @@
       </button>
       {#if $hasGitHubToken}
         <button class="refresh-btn" onclick={handleRefreshPRs} disabled={$prsLoading}>
-          {$prsLoading ? "Loading..." : "Refresh PRs"}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10" />
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+          </svg>
+          {$prsLoading ? "Loading..." : "Refresh"}
         </button>
       {/if}
     </div>
 
     {#if $prsError}
       <div class="error-banner">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
         GitHub Error: {$prsError}
       </div>
     {/if}
 
-    <!-- Show task list for task-only view, combined view otherwise -->
     {#if viewFilter === "tasks"}
       <TaskList onSyncTask={handleSyncTask} onLogTime={handleLogTime} />
     {:else if viewFilter === "prs"}
       <PRList onSchedule={handleSchedulePR} onLinkJira={handleLinkJira} />
     {:else}
-      <!-- Combined view -->
       {#if filteredItems.length === 0}
         <div class="empty">
           <p>No items to display</p>
         </div>
       {:else}
         <div class="combined-list">
-          {#each filteredItems as workItem (workItem.type + "-" + (workItem.type === "task" ? workItem.item.id : workItem.item.id))}
-            {#if workItem.type === "task"}
-              <div class="work-item task-item">
-                <div class="item-type-badge task">Task</div>
+          {#each filteredItems as workItem, i (workItem.type + "-" + (workItem.type === "task" ? workItem.item.id : workItem.item.id))}
+            <div class="work-item" class:task-item={workItem.type === "task"} class:pr-item={workItem.type === "pr"} style="animation: fadeInUp 0.3s var(--ease-out) {Math.min(i, 15) * 30}ms both">
+              {#if workItem.type === "task"}
+                <div class="item-type-indicator task"></div>
                 <div class="item-content">
                   <div class="item-header">
-                    <span class="item-key">{workItem.item.key}</span>
+                    <span class="item-key task">{workItem.item.key}</span>
                     <span class="item-status">{workItem.item.status}</span>
                   </div>
                   <div class="item-summary">{workItem.item.summary}</div>
@@ -249,25 +273,26 @@
                       <span class="priority">{workItem.item.priority}</span>
                     {/if}
                     {#if workItem.item.calendar_event_uid}
-                      <span class="scheduled-badge">Scheduled</span>
+                      <span class="scheduled-badge">
+                        <span class="sync-dot"></span>
+                        Scheduled
+                      </span>
                     {/if}
                   </div>
                 </div>
                 <div class="item-actions">
-                  <button class="action-btn schedule" onclick={() => handleSyncTask(workItem.item)}>
+                  <button class="act-btn primary" onclick={() => handleSyncTask(workItem.item)}>
                     {workItem.item.calendar_event_uid ? "Reschedule" : "Schedule"}
                   </button>
-                  <a href={workItem.item.url} target="_blank" rel="noopener" class="action-btn view">
+                  <a href={workItem.item.url} target="_blank" rel="noopener" class="act-btn ghost">
                     View
                   </a>
                 </div>
-              </div>
-            {:else}
-              <div class="work-item pr-item">
-                <div class="item-type-badge pr">PR</div>
+              {:else}
+                <div class="item-type-indicator pr"></div>
                 <div class="item-content">
                   <div class="item-header">
-                    <span class="item-key">{workItem.item.repo_name}</span>
+                    <span class="item-key pr">{workItem.item.repo_name}</span>
                     <span class="item-number">#{workItem.item.number}</span>
                     <span class="role-badge" class:author={workItem.item.pr_role === "author"} class:reviewer={workItem.item.pr_role === "reviewer"}>
                       {workItem.item.pr_role === "author" ? "Author" : "Review"}
@@ -278,28 +303,31 @@
                   </div>
                   <div class="item-summary">{workItem.item.title}</div>
                   <div class="item-meta">
-                    <span class="author">{workItem.item.author}</span>
+                    <span class="author-text">{workItem.item.author}</span>
                     {#if workItem.item.linked_jira_key || workItem.item.jira_key}
                       <span class="jira-badge">{workItem.item.linked_jira_key || workItem.item.jira_key}</span>
                     {/if}
                     {#if workItem.item.calendar_event_uid}
-                      <span class="scheduled-badge">Scheduled</span>
+                      <span class="scheduled-badge">
+                        <span class="sync-dot"></span>
+                        Scheduled
+                      </span>
                     {/if}
                   </div>
                 </div>
                 <div class="item-actions">
-                  <button class="action-btn schedule pr-btn" onclick={() => handleSchedulePR(workItem.item)}>
+                  <button class="act-btn accent" onclick={() => handleSchedulePR(workItem.item)}>
                     {workItem.item.calendar_event_uid ? "Reschedule" : "Schedule"}
                   </button>
-                  <button class="action-btn link" onclick={() => handleLinkJira(workItem.item)}>
+                  <button class="act-btn link" onclick={() => handleLinkJira(workItem.item)}>
                     {workItem.item.linked_jira_key || workItem.item.jira_key ? "Jira" : "Link"}
                   </button>
-                  <a href={workItem.item.url} target="_blank" rel="noopener" class="action-btn view">
+                  <a href={workItem.item.url} target="_blank" rel="noopener" class="act-btn ghost">
                     View
                   </a>
                 </div>
-              </div>
-            {/if}
+              {/if}
+            </div>
           {/each}
         </div>
       {/if}
@@ -337,176 +365,220 @@
     margin: 0 auto;
   }
 
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
   h1 {
+    font-family: var(--font-display);
     font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary);
+    letter-spacing: -0.04em;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-tertiary);
+  }
+
+  .stat-value {
+    font-family: var(--font-display);
     font-weight: 600;
-    margin: 0 0 24px;
-    color: #1d1d1f;
+    color: var(--text-secondary);
+  }
+
+  .stat-value.accent {
+    color: var(--accent-blue);
   }
 
   .setup-prompt {
-    background: white;
-    border-radius: 12px;
-    padding: 40px;
+    padding: 56px 40px;
     text-align: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    animation: fadeInUp 0.4s var(--ease-out);
+  }
+
+  .setup-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: var(--gradient-brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    color: white;
   }
 
   .setup-prompt h2 {
-    margin: 0 0 16px;
-    font-size: 24px;
-    color: #1d1d1f;
+    margin: 0 0 8px;
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
   }
 
   .setup-prompt p {
-    margin: 8px 0;
-    color: #86868b;
+    margin: 4px 0;
+    color: var(--text-secondary);
     line-height: 1.5;
+  }
+
+  .setup-prompt .sub {
+    color: var(--text-tertiary);
+    font-size: 14px;
   }
 
   .filter-tabs {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     margin-bottom: 20px;
     padding-bottom: 16px;
-    border-bottom: 1px solid #e5e5e5;
+    border-bottom: 1px solid var(--border-subtle);
     flex-wrap: wrap;
     align-items: center;
   }
 
   .filter-tab {
-    padding: 8px 16px;
-    border: 1px solid #d2d2d7;
-    background: white;
-    border-radius: 20px;
-    font-size: 13px;
-    color: #1d1d1f;
-    cursor: pointer;
-    transition: all 0.2s;
     display: flex;
     align-items: center;
     gap: 6px;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all 0.15s var(--ease-out);
   }
 
   .filter-tab:hover {
-    background: #f5f5f7;
+    color: var(--text-secondary);
   }
 
   .filter-tab.active {
-    background: #1d1d1f;
-    color: white;
-    border-color: #1d1d1f;
+    color: var(--text-primary);
   }
 
-  .tab-badge {
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: 4px;
+  .filter-tab .count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
   }
 
-  .tab-badge.task {
-    background: #dbeafe;
-    color: #1d4ed8;
+  .filter-tab.active .count {
+    color: var(--text-secondary);
   }
 
-  .tab-badge.pr {
-    background: #ede9fe;
-    color: #7c3aed;
+  .filter-tab .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
   }
 
-  .filter-tab.active .tab-badge.task {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
+  .filter-tab .dot.task {
+    background: var(--accent-blue);
   }
 
-  .filter-tab.active .tab-badge.pr {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
+  .filter-tab .dot.pr {
+    background: var(--accent-purple);
   }
 
   .refresh-btn {
-    padding: 8px 16px;
-    border: 1px solid #8b5cf6;
-    background: white;
-    border-radius: 20px;
-    font-size: 13px;
-    color: #8b5cf6;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border: 1px solid var(--border-default);
+    background: transparent;
+    border-radius: 7px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-secondary);
     cursor: pointer;
     margin-left: auto;
+    transition: all 0.15s var(--ease-out);
   }
 
   .refresh-btn:hover:not(:disabled) {
-    background: #ede9fe;
+    color: var(--text-primary);
+    background: var(--bg-hover);
+    border-color: var(--border-strong);
   }
 
   .refresh-btn:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
   .error-banner {
-    padding: 12px 16px;
-    background: #ffebea;
-    border-radius: 8px;
-    color: #ff3b30;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--accent-red-dim);
+    border-radius: var(--radius-md);
+    color: var(--accent-red);
     font-size: 13px;
     margin-bottom: 16px;
+    border: 1px solid rgba(248, 113, 113, 0.15);
   }
 
   .empty {
     text-align: center;
-    padding: 40px;
-    background: white;
-    border-radius: 12px;
-    color: #86868b;
+    padding: 48px 24px;
+    color: var(--text-tertiary);
   }
 
   .combined-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
   }
 
   .work-item {
     display: flex;
     align-items: flex-start;
-    gap: 16px;
-    padding: 16px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: box-shadow 0.2s;
+    gap: 14px;
+    padding: 14px 4px;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: all 0.15s var(--ease-out);
+  }
+
+  .work-item:first-child {
+    border-top: 1px solid var(--border-subtle);
   }
 
   .work-item:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.02);
   }
 
-  .work-item.task-item {
-    border-left: 3px solid #0071e3;
+  .item-type-indicator {
+    width: 3px;
+    min-height: 36px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    align-self: stretch;
   }
 
-  .work-item.pr-item {
-    border-left: 3px solid #8b5cf6;
+  .item-type-indicator.task {
+    background: var(--accent-blue);
   }
 
-  .item-type-badge {
-    font-size: 10px;
-    font-weight: 600;
-    padding: 4px 8px;
-    border-radius: 4px;
-    white-space: nowrap;
-  }
-
-  .item-type-badge.task {
-    background: #dbeafe;
-    color: #1d4ed8;
-  }
-
-  .item-type-badge.pr {
-    background: #ede9fe;
-    color: #7c3aed;
+  .item-type-indicator.pr {
+    background: var(--accent-purple);
   }
 
   .item-content {
@@ -517,150 +589,173 @@
   .item-header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     margin-bottom: 4px;
+    flex-wrap: wrap;
   }
 
   .item-key {
-    font-size: 13px;
+    font-family: var(--font-mono);
+    font-size: 12px;
     font-weight: 600;
-    color: #0071e3;
+    letter-spacing: 0.01em;
   }
 
-  .pr-item .item-key {
-    color: #6b7280;
+  .item-key.task {
+    color: var(--accent-blue);
+  }
+
+  .item-key.pr {
+    color: var(--text-tertiary);
   }
 
   .item-number {
-    font-size: 13px;
+    font-family: var(--font-mono);
+    font-size: 12px;
     font-weight: 600;
-    color: #8b5cf6;
+    color: var(--accent-purple);
   }
 
   .item-status {
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    background: #f5f5f7;
-    color: #86868b;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
+    background: var(--bg-hover);
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
 
   .role-badge {
+    font-family: var(--font-mono);
     font-size: 10px;
-    font-weight: 600;
-    padding: 2px 6px;
+    font-weight: 500;
+    padding: 1px 6px;
     border-radius: 4px;
+    letter-spacing: 0.02em;
   }
 
   .role-badge.reviewer {
-    background: #ede9fe;
-    color: #7c3aed;
+    background: var(--accent-purple-dim);
+    color: var(--accent-purple);
   }
 
   .role-badge.author {
-    background: #dbeafe;
-    color: #1d4ed8;
+    background: var(--accent-blue-dim);
+    color: var(--accent-blue);
   }
 
   .draft-badge {
+    font-family: var(--font-mono);
     font-size: 10px;
-    padding: 2px 6px;
+    padding: 1px 6px;
     border-radius: 4px;
-    background: #fef3c7;
-    color: #d97706;
+    background: var(--accent-amber-dim);
+    color: var(--accent-amber);
   }
 
   .item-summary {
     font-size: 14px;
     font-weight: 500;
-    color: #1d1d1f;
-    margin-bottom: 8px;
+    color: var(--text-primary);
+    margin-bottom: 6px;
     line-height: 1.4;
   }
 
   .item-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    font-size: 12px;
-    color: #86868b;
+    gap: 6px;
+    font-size: 11px;
   }
 
   .item-meta span {
-    padding: 2px 8px;
-    background: #f5f5f7;
-    border-radius: 4px;
+    color: var(--text-tertiary);
   }
 
   .item-meta .priority {
-    background: #fef3c7;
-    color: #d97706;
+    color: var(--accent-amber);
   }
 
   .item-meta .jira-badge {
-    background: #dbeafe;
-    color: #1d4ed8;
-    font-weight: 500;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--accent-blue);
   }
 
   .item-meta .scheduled-badge {
-    background: #e8f8ec;
-    color: #34c759;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--accent-green);
   }
 
-  .item-meta .author {
+  .sync-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent-green);
+  }
+
+  .item-meta .author-text {
     background: transparent;
-    color: #6b7280;
+    color: var(--text-tertiary);
+    border: none;
+    padding: 0;
   }
 
   .item-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;
+    align-self: center;
   }
 
-  .action-btn {
-    padding: 6px 12px;
+  .act-btn {
+    padding: 5px 10px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
     font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
     text-decoration: none;
-    transition: background-color 0.2s;
+    transition: all 0.15s var(--ease-out);
+    background: transparent;
+    color: var(--text-tertiary);
   }
 
-  .action-btn.schedule {
-    background: #0071e3;
-    color: white;
+  .act-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
   }
 
-  .action-btn.schedule:hover {
-    background: #0077ed;
+  .act-btn.primary {
+    color: var(--accent-blue);
   }
 
-  .action-btn.schedule.pr-btn {
-    background: #8b5cf6;
+  .act-btn.primary:hover {
+    background: var(--accent-blue-dim);
   }
 
-  .action-btn.schedule.pr-btn:hover {
-    background: #7c3aed;
+  .act-btn.accent {
+    color: var(--accent-purple);
   }
 
-  .action-btn.link {
-    background: #dbeafe;
-    color: #1d4ed8;
+  .act-btn.accent:hover {
+    background: var(--accent-purple-dim);
   }
 
-  .action-btn.link:hover {
-    background: #bfdbfe;
+  .act-btn.link {
+    color: var(--accent-blue);
   }
 
-  .action-btn.view {
-    background: #f5f5f7;
-    color: #1d1d1f;
+  .act-btn.link:hover {
+    background: var(--accent-blue-dim);
   }
 
-  .action-btn.view:hover {
-    background: #e8e8ed;
+  .act-btn.ghost {
+    color: var(--text-tertiary);
   }
 </style>

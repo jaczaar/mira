@@ -111,7 +111,6 @@
   const groupedByEpic = $derived.by(() => {
     const groups = new Map<string, EpicGroup>();
 
-    // First pass: add all epics
     for (const task of visibleTasks) {
       if (task.is_epic) {
         groups.set(task.key, {
@@ -122,7 +121,6 @@
       }
     }
 
-    // Second pass: add non-epic tasks to their parent groups
     for (const task of visibleTasks) {
       if (task.is_epic) continue;
 
@@ -130,7 +128,6 @@
       if (parentKey && groups.has(parentKey)) {
         groups.get(parentKey)!.tasks.push(task);
       } else if (parentKey) {
-        // Parent epic exists but not in filtered results - create a group for it
         if (!groups.has(parentKey)) {
           groups.set(parentKey, {
             epicKey: parentKey,
@@ -140,7 +137,6 @@
         }
         groups.get(parentKey)!.tasks.push(task);
       } else {
-        // No parent - add to "No Epic" group
         const noEpicKey = "__no_epic__";
         if (!groups.has(noEpicKey)) {
           groups.set(noEpicKey, {
@@ -153,7 +149,6 @@
       }
     }
 
-    // Convert to array and sort: epics with children first, then no epic
     const result = Array.from(groups.values()).sort((a, b) => {
       if (a.epicKey === null) return 1;
       if (b.epicKey === null) return -1;
@@ -182,6 +177,10 @@
     </div>
 
     <div class="search-bar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
       <input
         type="search"
         placeholder="Search tasks..."
@@ -190,61 +189,78 @@
       />
       {#if searchQuery}
         <button type="button" class="clear-search" onclick={() => (searchQuery = "")}>
-          Clear
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
       {/if}
     </div>
 
     <div class="view-toggle">
       <button class:active={viewMode === "grouped"} onclick={() => (viewMode = "grouped")}>
-        Grouped
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="8" y1="6" x2="21" y2="6" />
+          <line x1="8" y1="12" x2="21" y2="12" />
+          <line x1="8" y1="18" x2="21" y2="18" />
+          <line x1="3" y1="6" x2="3.01" y2="6" />
+          <line x1="3" y1="12" x2="3.01" y2="12" />
+          <line x1="3" y1="18" x2="3.01" y2="18" />
+        </svg>
       </button>
       <button class:active={viewMode === "flat"} onclick={() => (viewMode = "flat")}>
-        Flat
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </svg>
       </button>
     </div>
   </div>
 
   {#if $tasksLoading}
-    <div class="loading">
+    <div class="state-panel">
       <div class="spinner"></div>
       <p>Loading tasks...</p>
     </div>
   {:else if $tasksError}
-    <div class="error">
+    <div class="state-panel error">
       <p>Failed to load tasks</p>
-      <p class="error-detail">{$tasksError}</p>
+      <p class="detail">{$tasksError}</p>
     </div>
   {:else if visibleTasks.length === 0}
-    <div class="empty">
+    <div class="state-panel">
       {#if searchQuery}
         <p>No tasks match "{searchQuery}"</p>
-        <button onclick={() => (searchQuery = "")}>Clear search</button>
+        <button class="reset-btn" onclick={() => (searchQuery = "")}>Clear search</button>
       {:else}
         <p>No tasks found</p>
         {#if filter !== "all"}
-          <button onclick={() => (filter = "all")}>Show all tasks</button>
+          <button class="reset-btn" onclick={() => (filter = "all")}>Show all tasks</button>
         {/if}
       {/if}
     </div>
   {:else if viewMode === "flat"}
     <div class="tasks-grid">
-      {#each visibleTasks as task (task.id)}
-        <TaskCard {task} onSync={onSyncTask} {onLogTime} />
+      {#each visibleTasks as task, i (task.id)}
+        <div style="animation: fadeInUp 0.3s var(--ease-out) {i * 40}ms both">
+          <TaskCard {task} onSync={onSyncTask} {onLogTime} />
+        </div>
       {/each}
     </div>
   {:else}
     <div class="epic-groups">
-      {#each groupedByEpic as group (group.epicKey || "__no_epic__")}
-        <div class="epic-group">
+      {#each groupedByEpic as group, gi (group.epicKey || "__no_epic__")}
+        <div class="epic-group" style="animation: fadeInUp 0.3s var(--ease-out) {gi * 60}ms both">
           <div class="epic-header" class:no-epic={!group.epicKey}>
             {#if group.epicKey}
               <span class="epic-key">{group.epicKey}</span>
               <span class="epic-summary">{group.epicSummary}</span>
             {:else}
-              <span class="epic-summary">No Epic</span>
+              <span class="epic-summary">Ungrouped</span>
             {/if}
-            <span class="task-count">{group.tasks.filter(t => !t.is_epic).length} tasks</span>
+            <span class="task-count">{group.tasks.filter(t => !t.is_epic).length}</span>
           </div>
           <div class="epic-tasks">
             {#each group.tasks.filter(t => !t.is_epic) as task (task.id)}
@@ -266,45 +282,64 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #e5e5e5;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-subtle);
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
   }
 
   .filter-bar {
     display: flex;
-    gap: 8px;
+    gap: 2px;
   }
 
-  .filter-bar button,
-  .view-toggle button {
-    padding: 8px 16px;
-    border: 1px solid #d2d2d7;
-    background: white;
-    border-radius: 20px;
-    font-size: 13px;
-    color: #1d1d1f;
+  .filter-bar button {
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s var(--ease-out);
   }
 
-  .filter-bar button:hover,
-  .view-toggle button:hover {
-    background: #f5f5f7;
+  .filter-bar button:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
   }
 
-  .filter-bar button.active,
-  .view-toggle button.active {
-    background: #1d1d1f;
-    color: white;
-    border-color: #1d1d1f;
+  .filter-bar button.active {
+    color: var(--text-primary);
   }
 
   .view-toggle {
     display: flex;
-    gap: 4px;
+    gap: 2px;
+  }
+
+  .view-toggle button {
+    padding: 6px 10px;
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all 0.15s var(--ease-out);
+    display: flex;
+    align-items: center;
+  }
+
+  .view-toggle button:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+
+  .view-toggle button.active {
+    color: var(--text-primary);
   }
 
   .search-bar {
@@ -312,141 +347,154 @@
     align-items: center;
     gap: 8px;
     flex: 1;
-    min-width: 200px;
-    max-width: 360px;
+    min-width: 180px;
+    max-width: 320px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 0 12px;
+    transition: border-color 0.2s;
+  }
+
+  .search-bar:focus-within {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px var(--accent-blue-dim);
+  }
+
+  .search-bar svg {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
   }
 
   .search-bar input {
     flex: 1;
-    padding: 8px 12px;
-    border: 1px solid #d2d2d7;
-    border-radius: 20px;
+    padding: 7px 0;
+    border: none;
+    background: transparent;
+    font-family: var(--font-body);
     font-size: 13px;
+    color: var(--text-primary);
+    outline: none;
   }
 
-  .search-bar input:focus {
-    outline: none;
-    border-color: #0071e3;
+  .search-bar input::placeholder {
+    color: var(--text-tertiary);
   }
 
   .clear-search {
-    padding: 6px 10px;
-    border: 1px solid #d2d2d7;
-    background: white;
-    border-radius: 12px;
-    font-size: 12px;
-    color: #1d1d1f;
+    padding: 2px;
+    background: var(--bg-hover);
+    border: none;
+    border-radius: 4px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    color: var(--text-tertiary);
   }
 
   .clear-search:hover {
-    background: #f5f5f7;
+    color: var(--text-primary);
   }
 
   .tasks-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
   }
 
   .epic-groups {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
   }
 
   .epic-group {
-    background: white;
-    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
   .epic-header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 16px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    gap: 10px;
+    padding: 10px 4px;
   }
 
   .epic-header.no-epic {
-    background: #86868b;
+    opacity: 0.7;
   }
 
   .epic-key {
+    font-family: var(--font-mono);
     font-weight: 600;
-    font-size: 14px;
-    background: rgba(255, 255, 255, 0.2);
+    font-size: 12px;
+    background: var(--accent-blue-dim);
+    color: var(--accent-blue);
     padding: 2px 8px;
     border-radius: 4px;
+    letter-spacing: 0.01em;
   }
 
   .epic-summary {
     flex: 1;
-    font-size: 15px;
-    font-weight: 500;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
   }
 
   .task-count {
-    font-size: 12px;
-    opacity: 0.8;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    background: var(--bg-hover);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
   }
 
   .epic-tasks {
     display: flex;
     flex-direction: column;
-    gap: 1px;
-    background: #f0f0f0;
   }
 
-  .loading,
-  .error,
-  .empty {
+  .state-panel {
     text-align: center;
-    padding: 40px;
-    background: white;
-    border-radius: 12px;
+    padding: 48px 24px;
+    color: var(--text-secondary);
   }
 
-  .loading .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid #e5e5e5;
-    border-top-color: #0071e3;
+  .state-panel.error {
+    color: var(--accent-red);
+  }
+
+  .state-panel .detail {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+  }
+
+  .state-panel .spinner {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--border-default);
+    border-top-color: var(--accent-blue);
     border-radius: 50%;
-    margin: 0 auto 16px;
+    margin: 0 auto 14px;
     animation: spin 0.8s linear infinite;
   }
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .error {
-    background: #ffebea;
-    color: #ff3b30;
-  }
-
-  .error-detail {
-    font-size: 13px;
-    opacity: 0.8;
-  }
-
-  .empty {
-    color: #86868b;
-  }
-
-  .empty button {
+  .reset-btn {
     margin-top: 12px;
-    padding: 8px 16px;
-    background: #0071e3;
-    color: white;
-    border: none;
-    border-radius: 8px;
+    padding: 7px 16px;
+    background: var(--accent-blue-dim);
+    color: var(--accent-blue);
+    border: 1px solid rgba(91, 141, 239, 0.2);
+    border-radius: var(--radius-sm);
     cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 13px;
+  }
+
+  .reset-btn:hover {
+    background: rgba(91, 141, 239, 0.2);
   }
 </style>

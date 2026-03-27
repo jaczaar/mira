@@ -23,11 +23,11 @@
   function getStatusColor(category: string): string {
     switch (category) {
       case "done":
-        return "#34c759";
+        return "var(--accent-green)";
       case "indeterminate":
-        return "#0071e3";
+        return "var(--accent-blue)";
       default:
-        return "#86868b";
+        return "var(--text-tertiary)";
     }
   }
 
@@ -35,17 +35,17 @@
     switch (priority?.toLowerCase()) {
       case "highest":
       case "critical":
-        return "#ff3b30";
+        return "var(--accent-red)";
       case "high":
-        return "#ff9500";
+        return "var(--accent-amber)";
       case "medium":
-        return "#ffcc00";
+        return "#eab308";
       case "low":
-        return "#34c759";
+        return "var(--accent-green)";
       case "lowest":
-        return "#86868b";
+        return "var(--text-tertiary)";
       default:
-        return "#86868b";
+        return "var(--text-tertiary)";
     }
   }
 </script>
@@ -95,7 +95,14 @@
     {/if}
 
     {#if task.due_date}
-      <div class="task-due">Due: {task.due_date}</div>
+      <div class="task-due">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+        </svg>
+        Due: {task.due_date}
+      </div>
     {/if}
   {:else}
     <div class="compact-meta">
@@ -114,23 +121,26 @@
         <span class="estimate">Est: {formatDuration(task.time_estimate_seconds)}</span>
       {/if}
       {#if task.calendar_event_uid}
-        <span class="synced-badge">Synced</span>
+        <span class="synced-badge">
+          <span class="sync-dot"></span>
+          Synced
+        </span>
       {/if}
     </div>
   {/if}
 
   <div class="task-actions">
     {#if onSync}
-      <button class="action-btn sync" onclick={() => onSync(task)}>
-        {task.calendar_event_uid ? "Re-sync" : "Sync"}
+      <button class="act-btn primary" onclick={() => onSync(task)}>
+        {task.calendar_event_uid ? "Re-sync" : "Schedule"}
       </button>
     {/if}
     {#if onLogTime && !compact}
-      <button class="action-btn log" onclick={() => onLogTime(task)}>
+      <button class="act-btn success" onclick={() => onLogTime(task)}>
         Log Time
       </button>
     {/if}
-    <a href={task.url} target="_blank" rel="noopener" class="action-btn view">
+    <a href={task.url} target="_blank" rel="noopener" class="act-btn ghost">
       View
     </a>
   </div>
@@ -150,16 +160,18 @@
 
 <style>
   .task-card {
-    background: white;
-    border-radius: 12px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
     padding: 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: box-shadow 0.2s;
+    border: 1px solid var(--border-subtle);
+    transition: all 0.25s var(--ease-out);
+    position: relative;
   }
 
   .task-card.compact {
     border-radius: 0;
-    box-shadow: none;
+    border: none;
+    border-bottom: 1px solid var(--border-subtle);
     padding: 12px 20px;
     display: grid;
     grid-template-columns: auto 1fr auto;
@@ -181,7 +193,7 @@
     grid-column: 2;
     grid-row: 1;
     margin: 0;
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .task-card.compact .compact-meta {
@@ -197,17 +209,18 @@
     border-top: none;
   }
 
-  .task-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  .task-card:not(.compact):hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-glow-blue);
+    transform: translateY(-1px);
   }
 
   .task-card.compact:hover {
-    background: #f9f9f9;
-    box-shadow: none;
+    background: var(--bg-elevated);
   }
 
-  .task-card.synced {
-    border-left: 3px solid #34c759;
+  .task-card.synced:not(.compact) {
+    border-left: 2px solid var(--accent-green);
   }
 
   .task-header {
@@ -218,25 +231,30 @@
   }
 
   .task-key {
-    font-size: 13px;
+    font-family: var(--font-mono);
+    font-size: 12px;
     font-weight: 600;
-    color: #0071e3;
+    color: var(--accent-blue);
+    letter-spacing: 0.01em;
   }
 
   .task-status {
-    font-size: 11px;
+    font-family: var(--font-mono);
+    font-size: 10px;
     padding: 2px 8px;
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--status-color) 15%, white);
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--status-color) 12%, transparent);
     color: var(--status-color);
     font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
   }
 
   .task-summary {
-    margin: 0 0 12px;
-    font-size: 15px;
+    margin: 0 0 10px;
+    font-size: 14px;
     font-weight: 500;
-    color: #1d1d1f;
+    color: var(--text-primary);
     line-height: 1.4;
   }
 
@@ -244,7 +262,7 @@
   .compact-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
     margin-bottom: 8px;
   }
 
@@ -254,80 +272,98 @@
 
   .task-meta span,
   .compact-meta span {
-    font-size: 12px;
+    font-size: 11px;
     padding: 2px 8px;
-    border-radius: 4px;
-    background: #f5f5f7;
-    color: #86868b;
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
   }
 
   .priority {
-    background: color-mix(in srgb, var(--priority-color) 15%, white) !important;
+    background: color-mix(in srgb, var(--priority-color) 10%, transparent) !important;
     color: var(--priority-color) !important;
+    border-color: color-mix(in srgb, var(--priority-color) 20%, transparent) !important;
   }
 
   .synced-badge {
-    background: #e8f8ec !important;
-    color: #34c759 !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 4px;
+    background: var(--accent-green-dim) !important;
+    color: var(--accent-green) !important;
+    border-color: rgba(74, 222, 128, 0.2) !important;
   }
 
   .task-time {
     display: flex;
     gap: 12px;
-    font-size: 12px;
-    color: #86868b;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
     margin-bottom: 8px;
   }
 
   .task-due {
+    display: flex;
+    align-items: center;
+    gap: 5px;
     font-size: 12px;
-    color: #ff9500;
+    color: var(--accent-amber);
     margin-bottom: 8px;
   }
 
   .task-actions {
     display: flex;
-    gap: 8px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #f0f0f0;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
   }
 
-  .action-btn {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 6px;
+  .act-btn {
+    padding: 5px 11px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
     font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
     text-decoration: none;
-    transition: background-color 0.2s;
+    transition: all 0.15s var(--ease-out);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
   }
 
-  .action-btn.sync {
-    background: #0071e3;
-    color: white;
+  .act-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+    background: var(--bg-hover);
   }
 
-  .action-btn.sync:hover {
-    background: #0077ed;
+  .act-btn.primary {
+    background: var(--accent-blue-dim);
+    border-color: rgba(91, 141, 239, 0.2);
+    color: var(--accent-blue);
   }
 
-  .action-btn.log {
-    background: #34c759;
-    color: white;
+  .act-btn.primary:hover {
+    background: rgba(91, 141, 239, 0.2);
+    box-shadow: 0 0 12px var(--accent-blue-dim);
   }
 
-  .action-btn.log:hover {
-    background: #30d158;
+  .act-btn.success {
+    background: var(--accent-green-dim);
+    border-color: rgba(74, 222, 128, 0.15);
+    color: var(--accent-green);
   }
 
-  .action-btn.view {
-    background: #f5f5f7;
-    color: #1d1d1f;
+  .act-btn.success:hover {
+    background: rgba(74, 222, 128, 0.18);
   }
 
-  .action-btn.view:hover {
-    background: #e8e8ed;
+  .act-btn.ghost {
+    background: transparent;
   }
 
   .sync-indicator {
@@ -335,18 +371,20 @@
     align-items: center;
     gap: 6px;
     margin-top: 8px;
-    font-size: 11px;
-    color: #34c759;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent-green);
   }
 
   .sync-dot {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
-    background: #34c759;
+    background: var(--accent-green);
+    flex-shrink: 0;
   }
 
   .sync-time {
-    color: #86868b;
+    color: var(--text-tertiary);
   }
 </style>

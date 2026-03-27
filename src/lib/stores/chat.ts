@@ -38,6 +38,45 @@ export const prSubmitting = writable<boolean>(false);
 
 let unlisten: UnlistenFn | null = null;
 let messageCounter = 0;
+let sessionHasContext = false;
+
+const SYSTEM_CONTEXT = `[CONTEXT — You are working inside the Mira desktop app's built-in Claude Code chatbot. The user is a community contributor making changes to the Mira codebase. Here is what you need to know:
+
+## What Mira Is
+Mira is a Motion-like auto-scheduling desktop app built with Tauri 2 (Rust backend) + Svelte 5 (TypeScript frontend). It syncs Jira tasks and GitHub pull requests with Google Calendar, letting users schedule work blocks, track PR reviews, and log time back to Jira.
+
+## Tech Stack
+- Frontend: Svelte 5 (runes: $state, $derived, $props, $effect), TypeScript strict, Vite, scoped CSS (no Tailwind, no component library)
+- Backend: Tauri 2 (Rust), with modules for Jira API, GitHub API, Google Calendar OAuth/API, and this Claude chat integration
+- Styling: Dark theme using CSS custom properties (--bg-base, --bg-surface, --accent-blue, --font-display 'Outfit', --font-body 'DM Sans', --font-mono 'JetBrains Mono', etc.)
+- State management: Svelte writable stores in src/lib/stores/
+- API layer: src/lib/api.ts wraps Tauri invoke() commands
+
+## Key Directories
+- src/lib/components/ — All UI components (Dashboard, TaskCard, PRCard, TaskScheduler, PRScheduler, ChatWidget, Settings, etc.)
+- src/lib/stores/ — State stores (tasks.ts, github.ts, calendar.ts, config.ts, sync.ts, chat.ts, google.ts)
+- src/routes/ — Page components (Dashboard.svelte, Calendar.svelte, SettingsPage.svelte, About.svelte)
+- src-tauri/src/ — Rust backend (jira/, github/, google/, claude/, config/)
+
+## Current Features
+- Jira task sync with epic grouping, fuzzy search, priority/status badges
+- GitHub PR tracking with role detection (author/reviewer), repo grouping
+- Google Calendar integration: OAuth flow, event creation, weekly calendar view
+- Task & PR scheduling modals with time slot detection and multi-slot booking
+- Calendar-to-Jira worklog sync
+- Floating bottom nav pill for route switching
+- This chat widget for community contributions (changes → diff review → PR creation)
+
+## Design System
+The app uses a warm dark gray palette (#202025 base), desaturated pastel accents (blue #7cacf8, purple #b89eff, green #6ee7a0, amber #f5d06b), and avoids card-heavy layouts in favor of open spacing with subtle dividers. Buttons use transparent accent backgrounds on hover.
+
+## What the User Can Ask You
+They may ask you to add features, fix bugs, improve UI, refactor code, or anything else. You have full access to the codebase. After making changes, the user can review the diff and create a PR directly from this chat.
+
+Always prefer editing existing files over creating new ones. Follow the existing patterns (Svelte 5 runes, scoped CSS with design system variables, TypeScript strict). Do not add comments or docstrings to code you didn't change.]
+
+`;
+
 
 function genId(): string {
   return `msg-${Date.now()}-${messageCounter++}`;
@@ -64,6 +103,7 @@ export async function startSession(repoPath: string): Promise<void> {
       sessionId,
       messages: [],
     });
+    sessionHasContext = false;
 
     // Set up event listener for streaming
     if (unlisten) {
@@ -135,7 +175,14 @@ export async function sendMessage(message: string): Promise<void> {
   const session = get(chatSession);
   if (!session) return;
 
-  // Add user message
+  // On first message, prepend system context so Claude knows the codebase
+  let messageToSend = message;
+  if (!sessionHasContext) {
+    messageToSend = SYSTEM_CONTEXT + message;
+    sessionHasContext = true;
+  }
+
+  // Add user message (show original, not the context-prefixed version)
   const userMsg: ChatMessage = {
     id: genId(),
     role: "user",
@@ -165,7 +212,7 @@ export async function sendMessage(message: string): Promise<void> {
   chatError.set(null);
 
   try {
-    await apiSendMessage(session.sessionId, message);
+    await apiSendMessage(session.sessionId, messageToSend);
   } catch (e) {
     chatLoading.set(false);
     chatSession.update((s) => {

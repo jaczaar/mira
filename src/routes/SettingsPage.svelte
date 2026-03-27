@@ -6,27 +6,36 @@
 <div class="settings-page">
   <Notifications />
 
-  <h1>Settings</h1>
-  <p class="description">Configure your Jira connection and sync preferences.</p>
+  <div class="page-header">
+    <h1>Settings</h1>
+    <p class="description">Configure your integrations and sync preferences.</p>
+  </div>
 
   <Settings />
 </div>
 
 <style>
   .settings-page {
-    max-width: 800px;
+    max-width: 720px;
     margin: 0 auto;
   }
 
+  .page-header {
+    margin-bottom: 24px;
+  }
+
   h1 {
-    font-size: 28px;
-    font-weight: 600;
-    margin: 0 0 8px;
-    color: #1d1d1f;
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
   }
 
   .description {
-    color: #86868b;
-    margin: 0 0 24px;
+    color: var(--text-tertiary);
+    margin: 0;
+    font-size: 14px;
   }
 </style>

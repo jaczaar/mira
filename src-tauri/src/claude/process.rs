@@ -1,5 +1,6 @@
 use std::path::Path;
 use std::process::Stdio;
+use tauri::Emitter;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 

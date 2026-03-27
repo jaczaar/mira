@@ -4,11 +4,14 @@
 
 <div class="about">
   <div class="card">
-    <h1>Mira</h1>
-    <p class="version">Version 0.1.0</p>
+    <div class="hero">
+      <div class="logo-mark">M</div>
+      <h1>Mira</h1>
+      <p class="version">v0.1.0</p>
+    </div>
 
     <p class="description">
-      Mira is a Motion-like auto-scheduling desktop app that syncs Jira tasks
+      A Motion-like auto-scheduling desktop app that syncs Jira tasks
       and GitHub PRs with Google Calendar, with community-driven development
       powered by Claude Code.
     </p>
@@ -51,128 +54,181 @@
       <h2>Keyboard Shortcuts</h2>
       <div class="shortcuts">
         <div class="shortcut">
-          <kbd>⌘</kbd> + <kbd>R</kbd>
-          <span>Refresh tasks</span>
+          <div class="keys">
+            <kbd>&#8984;</kbd><span class="plus">+</span><kbd>R</kbd>
+          </div>
+          <span class="action">Refresh tasks</span>
         </div>
         <div class="shortcut">
-          <kbd>⌘</kbd> + <kbd>S</kbd>
-          <span>Sync to calendar</span>
+          <div class="keys">
+            <kbd>&#8984;</kbd><span class="plus">+</span><kbd>S</kbd>
+          </div>
+          <span class="action">Sync to calendar</span>
         </div>
         <div class="shortcut">
-          <kbd>⌘</kbd> + <kbd>,</kbd>
-          <span>Open settings</span>
+          <div class="keys">
+            <kbd>&#8984;</kbd><span class="plus">+</span><kbd>,</kbd>
+          </div>
+          <span class="action">Open settings</span>
         </div>
       </div>
     </section>
 
     <footer>
-      <p>Built with Tauri + Svelte</p>
+      <span>Built with Tauri + Svelte</span>
     </footer>
   </div>
 </div>
 
 <style>
   .about {
-    max-width: 600px;
+    max-width: 560px;
     margin: 0 auto;
+    animation: fadeInUp 0.4s var(--ease-out);
   }
 
   .card {
-    background: white;
-    border-radius: 12px;
-    padding: 32px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 8px 0;
   }
 
-  h1 {
-    font-size: 32px;
-    font-weight: 600;
-    margin: 0;
-    color: #1d1d1f;
-  }
-
-  .version {
-    color: #86868b;
-    margin: 4px 0 24px;
-  }
-
-  .description {
-    font-size: 16px;
-    line-height: 1.6;
-    color: #1d1d1f;
-    margin-bottom: 32px;
-  }
-
-  section {
+  .hero {
+    text-align: center;
     margin-bottom: 28px;
   }
 
+  .logo-mark {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: var(--gradient-brand);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 22px;
+    color: white;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary);
+    letter-spacing: -0.04em;
+  }
+
+  .version {
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+    font-size: 12px;
+    margin: 4px 0 0;
+  }
+
+  .description {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: 28px;
+  }
+
+  section {
+    margin-bottom: 24px;
+  }
+
   h2 {
-    font-size: 18px;
+    font-family: var(--font-display);
+    font-size: 16px;
     font-weight: 600;
     margin: 0 0 12px;
-    color: #1d1d1f;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
   }
 
   ul,
   ol {
     margin: 0;
-    padding-left: 24px;
+    padding-left: 20px;
   }
 
   li {
     margin: 8px 0;
     line-height: 1.5;
-    color: #1d1d1f;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+
+  li::marker {
+    color: var(--text-tertiary);
   }
 
   .link-btn {
     background: none;
     border: none;
-    color: #0071e3;
+    color: var(--accent-blue);
     cursor: pointer;
     font-size: inherit;
     padding: 0;
-    text-decoration: underline;
+    text-decoration: none;
+    font-weight: 500;
   }
 
   .link-btn:hover {
-    color: #0077ed;
+    text-decoration: underline;
   }
 
   .shortcuts {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
   }
 
   .shortcut {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    padding: 8px 0;
+  }
+
+  .keys {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .plus {
+    font-size: 11px;
+    color: var(--text-tertiary);
   }
 
   kbd {
-    display: inline-block;
-    padding: 4px 8px;
-    background: #f5f5f7;
-    border: 1px solid #d2d2d7;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    padding: 3px 7px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 5px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    box-shadow: 0 1px 0 var(--border-subtle);
   }
 
-  .shortcut span {
-    margin-left: 12px;
-    color: #86868b;
+  .action {
+    font-size: 13px;
+    color: var(--text-secondary);
   }
 
   footer {
-    margin-top: 32px;
-    padding-top: 20px;
-    border-top: 1px solid #e5e5e5;
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
     text-align: center;
-    color: #86868b;
-    font-size: 13px;
+    color: var(--text-tertiary);
+    font-size: 12px;
   }
 </style>

@@ -1,103 +1,90 @@
 <script lang="ts">
-  import StatusBadge from "./StatusBadge.svelte";
-  import { syncState } from "../stores/sync";
-
   interface Props {
-    currentRoute: "dashboard" | "settings" | "about";
-    onNavigate: (route: "dashboard" | "settings" | "about") => void;
+    currentRoute: "dashboard" | "calendar" | "settings" | "about";
+    onNavigate: (route: "dashboard" | "calendar" | "settings" | "about") => void;
   }
 
   let { currentRoute, onNavigate }: Props = $props();
+
+  const navItems = [
+    { route: "calendar" as const, label: "Calendar", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
+    { route: "dashboard" as const, label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
+  ];
 </script>
 
-<header>
-  <div class="logo">
-    <h1>Mira</h1>
-    <span class="subtitle">Auto-Scheduling</span>
-  </div>
-
-  <nav>
+<nav>
+  {#each navItems as item}
     <button
-      class:active={currentRoute === "dashboard"}
-      onclick={() => onNavigate("dashboard")}
+      class:active={currentRoute === item.route}
+      onclick={() => onNavigate(item.route)}
+      title={item.label}
     >
-      Dashboard
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d={item.icon} />
+      </svg>
+      {#if currentRoute === item.route}
+        <span class="label">{item.label}</span>
+      {/if}
     </button>
-    <button
-      class:active={currentRoute === "settings"}
-      onclick={() => onNavigate("settings")}
-    >
-      Settings
-    </button>
-    <button
-      class:active={currentRoute === "about"}
-      onclick={() => onNavigate("about")}
-    >
-      About
-    </button>
-  </nav>
-
-  <div class="status">
-    <StatusBadge status={$syncState.status} message={$syncState.message} />
-  </div>
-</header>
+  {/each}
+</nav>
 
 <style>
-  header {
+  nav {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 12px 24px;
-    background: white;
-    border-bottom: 1px solid #e5e5e5;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  }
-
-  .logo {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-  }
-
-  h1 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 600;
-    color: #1d1d1f;
-  }
-
-  .subtitle {
-    font-size: 12px;
-    color: #86868b;
-  }
-
-  nav {
-    display: flex;
     gap: 4px;
+    padding: 6px;
+    background: rgba(32, 32, 37, 0.85);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--border-default);
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
   }
 
-  nav button {
-    padding: 8px 16px;
+  button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
     border: none;
     background: transparent;
-    color: #1d1d1f;
-    font-size: 14px;
+    color: var(--text-tertiary);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
-    border-radius: 6px;
-    transition: background-color 0.2s;
+    border-radius: 11px;
+    transition: all 0.2s var(--ease-out);
+    white-space: nowrap;
   }
 
-  nav button:hover {
-    background: #f5f5f7;
+  button svg {
+    transition: all 0.2s var(--ease-out);
+    flex-shrink: 0;
   }
 
-  nav button.active {
-    background: #0071e3;
-    color: white;
+  button:hover {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.06);
   }
 
-  .status {
-    min-width: 120px;
-    text-align: right;
+  button.active {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  button.active svg {
+    stroke: var(--accent-blue);
+  }
+
+  .label {
+    animation: fadeIn 0.2s var(--ease-out);
   }
 </style>

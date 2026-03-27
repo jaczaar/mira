@@ -60,42 +60,59 @@
     </div>
     <div class="view-toggle">
       <button class:active={viewMode === "grouped"} onclick={() => (viewMode = "grouped")}>
-        Grouped
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="8" y1="6" x2="21" y2="6" />
+          <line x1="8" y1="12" x2="21" y2="12" />
+          <line x1="8" y1="18" x2="21" y2="18" />
+          <line x1="3" y1="6" x2="3.01" y2="6" />
+          <line x1="3" y1="12" x2="3.01" y2="12" />
+          <line x1="3" y1="18" x2="3.01" y2="18" />
+        </svg>
       </button>
       <button class:active={viewMode === "flat"} onclick={() => (viewMode = "flat")}>
-        Flat
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </svg>
       </button>
     </div>
   </div>
 
   {#if $prsLoading}
-    <div class="loading">
+    <div class="state-panel">
       <div class="spinner"></div>
       <p>Loading PR reviews...</p>
     </div>
   {:else if $prsError}
-    <div class="error">
+    <div class="state-panel error">
       <p>Failed to load PRs</p>
-      <p class="error-detail">{$prsError}</p>
+      <p class="detail">{$prsError}</p>
     </div>
   {:else if filteredPRs.length === 0}
-    <div class="empty">
+    <div class="state-panel">
       <p>{roleFilter === "reviewer" ? "No PRs waiting for your review" : roleFilter === "author" ? "No PRs authored by you" : "No pull requests found"}</p>
     </div>
   {:else if viewMode === "flat"}
     <div class="pr-grid">
-      {#each filteredPRs as pr (pr.id)}
-        <PRCard {pr} {onSchedule} {onLinkJira} />
+      {#each filteredPRs as pr, i (pr.id)}
+        <div style="animation: fadeInUp 0.3s var(--ease-out) {i * 40}ms both">
+          <PRCard {pr} {onSchedule} {onLinkJira} />
+        </div>
       {/each}
     </div>
   {:else}
     <div class="repo-groups">
-      {#each groupedByRepo as group (group.repoName)}
-        <div class="repo-group">
+      {#each groupedByRepo as group, gi (group.repoName)}
+        <div class="repo-group" style="animation: fadeInUp 0.3s var(--ease-out) {gi * 60}ms both">
           <div class="repo-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+            </svg>
             <span class="repo-name">{group.repoName}</span>
             <span class="repo-full-name">{group.repoFullName}</span>
-            <span class="pr-count">{group.prs.length} {group.prs.length === 1 ? "PR" : "PRs"}</span>
+            <span class="pr-count">{group.prs.length}</span>
           </div>
           <div class="repo-prs">
             {#each group.prs as pr (pr.id)}
@@ -117,150 +134,139 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #e5e5e5;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .role-filter {
     display: flex;
-    gap: 4px;
+    gap: 2px;
   }
 
   .role-filter button {
-    padding: 8px 16px;
-    border: 1px solid #d2d2d7;
-    background: white;
-    border-radius: 20px;
-    font-size: 13px;
-    color: #1d1d1f;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s var(--ease-out);
   }
 
   .role-filter button:hover {
-    background: #f5f5f7;
+    color: var(--text-primary);
+    background: var(--bg-hover);
   }
 
   .role-filter button.active {
-    background: #1d1d1f;
-    color: white;
-    border-color: #1d1d1f;
+    color: var(--text-primary);
   }
 
   .view-toggle {
     display: flex;
-    gap: 4px;
+    gap: 2px;
   }
 
   .view-toggle button {
-    padding: 8px 16px;
-    border: 1px solid #d2d2d7;
-    background: white;
-    border-radius: 20px;
-    font-size: 13px;
-    color: #1d1d1f;
+    padding: 6px 10px;
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    color: var(--text-tertiary);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s var(--ease-out);
+    display: flex;
+    align-items: center;
   }
 
   .view-toggle button:hover {
-    background: #f5f5f7;
+    color: var(--text-primary);
+    background: var(--bg-hover);
   }
 
   .view-toggle button.active {
-    background: #1d1d1f;
-    color: white;
-    border-color: #1d1d1f;
+    color: var(--text-primary);
   }
 
   .pr-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
   }
 
   .repo-groups {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
   }
 
   .repo-group {
-    background: white;
-    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
   .repo-header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 16px 20px;
-    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-    color: white;
+    gap: 8px;
+    padding: 10px 4px;
+    color: var(--accent-purple);
   }
 
   .repo-name {
+    font-family: var(--font-display);
     font-weight: 600;
     font-size: 14px;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 2px 8px;
-    border-radius: 4px;
+    color: var(--text-primary);
   }
 
   .repo-full-name {
     flex: 1;
-    font-size: 13px;
-    opacity: 0.8;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
   }
 
   .pr-count {
-    font-size: 12px;
-    opacity: 0.8;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    background: var(--bg-hover);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
   }
 
   .repo-prs {
     display: flex;
     flex-direction: column;
-    gap: 1px;
-    background: #f0f0f0;
   }
 
-  .loading,
-  .error,
-  .empty {
+  .state-panel {
     text-align: center;
-    padding: 40px;
-    background: white;
-    border-radius: 12px;
-    color: #86868b;
+    padding: 48px 24px;
+    color: var(--text-secondary);
   }
 
-  .loading .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid #e5e5e5;
-    border-top-color: #8b5cf6;
-    border-radius: 50%;
-    margin: 0 auto 16px;
-    animation: spin 0.8s linear infinite;
+  .state-panel.error {
+    color: var(--accent-red);
   }
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .error {
-    background: #ffebea;
-    color: #ff3b30;
-  }
-
-  .error-detail {
+  .state-panel .detail {
     font-size: 13px;
-    opacity: 0.8;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+  }
+
+  .state-panel .spinner {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--border-default);
+    border-top-color: var(--accent-purple);
+    border-radius: 50%;
+    margin: 0 auto 14px;
+    animation: spin 0.8s linear infinite;
   }
 </style>

@@ -48,23 +48,23 @@
 
   {#if !compact}
     <div class="pr-meta">
-      <div class="author">
+      <div class="author-info">
         {#if pr.author_avatar}
           <img src={pr.author_avatar} alt={pr.author} class="avatar" />
         {/if}
         <span>{pr.author}</span>
       </div>
       <span class="branch-info">{pr.branch} → {pr.target_branch}</span>
-      <span class="updated">Updated {formatTimeAgo(pr.updated_at)}</span>
+      <span class="updated">{formatTimeAgo(pr.updated_at)}</span>
     </div>
 
     {#if getJiraKey()}
       <div class="jira-link">
         <span class="jira-badge">{getJiraKey()}</span>
         {#if pr.linked_jira_key && pr.linked_jira_key !== pr.jira_key}
-          <span class="linked-label">Linked</span>
+          <span class="link-label">Linked</span>
         {:else}
-          <span class="auto-label">Auto-detected</span>
+          <span class="link-label">Auto-detected</span>
         {/if}
       </div>
     {:else}
@@ -80,23 +80,26 @@
         <span class="jira-badge">{getJiraKey()}</span>
       {/if}
       {#if pr.calendar_event_uid}
-        <span class="synced-badge">Scheduled</span>
+        <span class="synced-badge">
+          <span class="sync-dot"></span>
+          Scheduled
+        </span>
       {/if}
     </div>
   {/if}
 
   <div class="pr-actions">
     {#if onSchedule}
-      <button class="action-btn schedule" onclick={() => onSchedule(pr)}>
+      <button class="act-btn accent" onclick={() => onSchedule(pr)}>
         {pr.calendar_event_uid ? "Reschedule" : "Schedule"}
       </button>
     {/if}
     {#if onLinkJira && !compact}
-      <button class="action-btn link" onclick={() => onLinkJira(pr)}>
+      <button class="act-btn link" onclick={() => onLinkJira(pr)}>
         {getJiraKey() ? "Change Jira" : "Link Jira"}
       </button>
     {/if}
-    <a href={pr.url} target="_blank" rel="noopener" class="action-btn view">
+    <a href={pr.url} target="_blank" rel="noopener" class="act-btn ghost">
       View
     </a>
   </div>
@@ -116,17 +119,19 @@
 
 <style>
   .pr-card {
-    background: white;
-    border-radius: 12px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
     padding: 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: box-shadow 0.2s;
-    border-left: 3px solid #8b5cf6;
+    border: 1px solid var(--border-subtle);
+    transition: all 0.25s var(--ease-out);
+    border-left: 2px solid var(--accent-purple);
   }
 
   .pr-card.compact {
     border-radius: 0;
-    box-shadow: none;
+    border: none;
+    border-bottom: 1px solid var(--border-subtle);
+    border-left: none;
     padding: 12px 20px;
     display: grid;
     grid-template-columns: auto 1fr auto;
@@ -148,7 +153,7 @@
     grid-column: 2;
     grid-row: 1;
     margin: 0;
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .pr-card.compact .compact-meta {
@@ -164,124 +169,135 @@
     border-top: none;
   }
 
-  .pr-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  .pr-card:not(.compact):hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-glow-purple);
+    transform: translateY(-1px);
   }
 
   .pr-card.compact:hover {
-    background: #f9f9f9;
-    box-shadow: none;
+    background: var(--bg-elevated);
   }
 
-  .pr-card.synced {
-    border-left-color: #34c759;
+  .pr-card.synced:not(.compact) {
+    border-left-color: var(--accent-green);
   }
 
   .pr-header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     margin-bottom: 8px;
   }
 
   .pr-badge {
-    font-size: 11px;
+    font-family: var(--font-mono);
+    font-size: 10px;
     font-weight: 600;
     padding: 2px 6px;
     border-radius: 4px;
-    background: #8b5cf6;
-    color: white;
+    background: var(--accent-purple-dim);
+    color: var(--accent-purple);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
   }
 
   .role-badge {
+    font-family: var(--font-mono);
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 500;
     padding: 2px 6px;
     border-radius: 4px;
+    letter-spacing: 0.02em;
   }
 
   .role-badge.reviewer {
-    background: #ede9fe;
-    color: #7c3aed;
+    background: var(--accent-purple-dim);
+    color: var(--accent-purple);
   }
 
   .role-badge.author {
-    background: #dbeafe;
-    color: #1d4ed8;
+    background: var(--accent-blue-dim);
+    color: var(--accent-blue);
   }
 
   .pr-repo {
-    font-size: 13px;
-    font-weight: 500;
-    color: #6b7280;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-tertiary);
   }
 
   .draft-badge {
+    font-family: var(--font-mono);
     font-size: 10px;
     font-weight: 500;
     padding: 2px 6px;
     border-radius: 4px;
-    background: #fef3c7;
-    color: #d97706;
+    background: var(--accent-amber-dim);
+    color: var(--accent-amber);
   }
 
   .pr-title {
-    margin: 0 0 12px;
-    font-size: 15px;
+    margin: 0 0 10px;
+    font-size: 14px;
     font-weight: 500;
-    color: #1d1d1f;
+    color: var(--text-primary);
     line-height: 1.4;
   }
 
   .pr-number {
-    color: #8b5cf6;
+    font-family: var(--font-mono);
+    color: var(--accent-purple);
     font-weight: 600;
   }
 
   .pr-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
     margin-bottom: 8px;
     font-size: 12px;
-    color: #6b7280;
+    color: var(--text-tertiary);
     align-items: center;
   }
 
   .compact-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
     margin-bottom: 0;
   }
 
   .compact-meta span {
-    font-size: 12px;
+    font-size: 11px;
     padding: 2px 8px;
-    border-radius: 4px;
-    background: #f5f5f7;
-    color: #86868b;
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
   }
 
-  .author {
+  .author-info {
     display: flex;
     align-items: center;
     gap: 6px;
   }
 
   .avatar {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
+    border: 1px solid var(--border-default);
   }
 
   .branch-info {
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-size: 11px;
-    background: #f5f5f7;
-    padding: 2px 6px;
+    background: var(--bg-elevated);
+    padding: 2px 8px;
     border-radius: 4px;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
   }
 
   .jira-link {
@@ -292,18 +308,19 @@
   }
 
   .jira-badge {
-    font-size: 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
     font-weight: 600;
     padding: 2px 8px;
     border-radius: 4px;
-    background: #dbeafe;
-    color: #1d4ed8;
+    background: var(--accent-blue-dim);
+    color: var(--accent-blue);
+    border: 1px solid rgba(91, 141, 239, 0.15);
   }
 
-  .linked-label,
-  .auto-label {
+  .link-label {
     font-size: 10px;
-    color: #6b7280;
+    color: var(--text-tertiary);
   }
 
   .no-jira {
@@ -312,53 +329,61 @@
 
   .no-jira-label {
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--text-tertiary);
     font-style: italic;
   }
 
   .pr-actions {
     display: flex;
-    gap: 8px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #f0f0f0;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
   }
 
-  .action-btn {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 6px;
+  .act-btn {
+    padding: 5px 11px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
     font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
     text-decoration: none;
-    transition: background-color 0.2s;
+    transition: all 0.15s var(--ease-out);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
   }
 
-  .action-btn.schedule {
-    background: #8b5cf6;
-    color: white;
+  .act-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+    background: var(--bg-hover);
   }
 
-  .action-btn.schedule:hover {
-    background: #7c3aed;
+  .act-btn.accent {
+    background: var(--accent-purple-dim);
+    border-color: rgba(167, 139, 250, 0.2);
+    color: var(--accent-purple);
   }
 
-  .action-btn.link {
-    background: #dbeafe;
-    color: #1d4ed8;
+  .act-btn.accent:hover {
+    background: rgba(167, 139, 250, 0.2);
+    box-shadow: 0 0 12px var(--accent-purple-dim);
   }
 
-  .action-btn.link:hover {
-    background: #bfdbfe;
+  .act-btn.link {
+    background: var(--accent-blue-dim);
+    border-color: rgba(91, 141, 239, 0.15);
+    color: var(--accent-blue);
   }
 
-  .action-btn.view {
-    background: #f5f5f7;
-    color: #1d1d1f;
+  .act-btn.link:hover {
+    background: rgba(91, 141, 239, 0.2);
   }
 
-  .action-btn.view:hover {
-    background: #e8e8ed;
+  .act-btn.ghost {
+    background: transparent;
   }
 
   .sync-indicator {
@@ -366,29 +391,34 @@
     align-items: center;
     gap: 6px;
     margin-top: 8px;
-    font-size: 11px;
-    color: #34c759;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent-green);
   }
 
   .sync-dot {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
-    background: #34c759;
+    background: var(--accent-green);
+    flex-shrink: 0;
   }
 
   .sync-time {
-    color: #86868b;
+    color: var(--text-tertiary);
   }
 
   .synced-badge {
-    background: #e8f8ec !important;
-    color: #34c759 !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 4px;
+    background: var(--accent-green-dim) !important;
+    color: var(--accent-green) !important;
   }
 
   .author-compact,
   .updated-compact {
     background: transparent !important;
-    color: #86868b !important;
+    color: var(--text-tertiary) !important;
   }
 </style>
