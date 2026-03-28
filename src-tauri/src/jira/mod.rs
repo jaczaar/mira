@@ -354,10 +354,11 @@ async fn handle_jira_callback(
     // Save the OAuth token as the Jira token (Bearer token works with Jira Cloud API)
     crate::config::save_jira_token(token.access_token)?;
 
-    // Save the site URL and email to config
+    // OAuth tokens must go through the Atlassian API gateway, not the direct site URL
+    let api_url = format!("https://api.atlassian.com/ex/jira/{}", resource.id);
     let site_url = resource.url.trim_end_matches('/').to_string();
     let mut config = get_config()?;
-    config.jira_url = site_url.clone();
+    config.jira_url = api_url;
     config.jira_email = email.clone();
     crate::config::save_config(config)?;
 
