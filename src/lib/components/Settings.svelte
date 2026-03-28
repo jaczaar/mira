@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { open } from "@tauri-apps/plugin-shell";
+  import { check } from "@tauri-apps/plugin-updater";
+  import { getVersion } from "@tauri-apps/api/app";
   import {
     config,
     configLoading,
@@ -64,6 +66,15 @@
   let githubConnectionMessage = $state("");
   let hasGitHubTokenLocal = $state(false);
 
+  let currentVersion = $state("");
+  let updateStatus = $state<"idle" | "checking" | "available" | "downloading" | "up-to-date" | "error">("idle");
+  let updateError = $state("");
+  let updateVersion = $state("");
+  let updateNotes = $state("");
+  let updateObj: Awaited<ReturnType<typeof check>> = $state(null);
+  let downloadedBytes = $state(0);
+  let totalBytes = $state(0);
+
   const calendarColors = [
     { id: null, name: "Default", color: "#4285f4" },
     { id: "1", name: "Lavender", color: "#7986cb" },
@@ -85,6 +96,7 @@
   }
 
   onMount(async () => {
+    currentVersion = await getVersion();
     await loadConfig();
     await loadGoogleAuthStatus();
     try {
@@ -269,6 +281,45 @@
       githubConnectionStatus = "error";
       githubConnectionMessage =
         error instanceof Error ? error.message : "Connection failed";
+    }
+  }
+
+  async function handleCheckForUpdate() {
+    updateStatus = "checking";
+    updateError = "";
+    try {
+      const update = await check();
+      if (update) {
+        updateAvailable: true;
+        updateVersion = update.version;
+        updateNotes = update.body ?? "";
+        updateStatus = "available";
+        updateObj = update;
+      } else {
+        updateStatus = "up-to-date";
+      }
+    } catch (error) {
+      updateStatus = "error";
+      updateError = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  async function handleDownloadAndInstall() {
+    if (!updateObj) return;
+    updateStatus = "downloading";
+    downloadedBytes = 0;
+    totalBytes = 0;
+    try {
+      await updateObj.downloadAndInstall((event) => {
+        if (event.event === "Started" && event.data.contentLength) {
+          totalBytes = event.data.contentLength;
+        } else if (event.event === "Progress") {
+          downloadedBytes += event.data.chunkLength;
+        }
+      });
+    } catch (error) {
+      updateStatus = "error";
+      updateError = error instanceof Error ? error.message : String(error);
     }
   }
 </script>
@@ -746,6 +797,73 @@
     </div>
   </section>
 
+  <section>
+    <div class="section-header">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+      <h2>Updates</h2>
+    </div>
+
+    <div class="form-group">
+      <label>Current Version</label>
+      <p class="version-display">v{currentVersion}</p>
+    </div>
+
+    <div class="button-group">
+      <button
+        class="btn primary"
+        onclick={handleCheckForUpdate}
+        disabled={updateStatus === "checking" || updateStatus === "downloading"}
+      >
+        {#if updateStatus === "checking"}
+          Checking...
+        {:else}
+          Check for updates
+        {/if}
+      </button>
+    </div>
+
+    {#if updateStatus === "up-to-date"}
+      <div class="connection-status success">You're on the latest version.</div>
+    {/if}
+
+    {#if updateStatus === "available"}
+      <div class="update-available">
+        <p class="update-version">v{updateVersion} is available</p>
+        {#if updateNotes}
+          <p class="update-notes">{updateNotes}</p>
+        {/if}
+        <div class="button-group">
+          <button class="btn primary" onclick={handleDownloadAndInstall}>
+            Download & Install
+          </button>
+        </div>
+      </div>
+    {/if}
+
+    {#if updateStatus === "downloading"}
+      <div class="update-progress">
+        <p class="hint">Downloading update...</p>
+        <div class="progress-bar">
+          <div
+            class="progress-fill"
+            style="width: {totalBytes > 0 ? Math.round((downloadedBytes / totalBytes) * 100) : 0}%"
+          ></div>
+        </div>
+        {#if totalBytes > 0}
+          <p class="hint">{Math.round(downloadedBytes / 1024 / 1024)}MB / {Math.round(totalBytes / 1024 / 1024)}MB</p>
+        {/if}
+      </div>
+    {/if}
+
+    {#if updateStatus === "error"}
+      <div class="connection-status error">{updateError}</div>
+    {/if}
+  </section>
+
   {#if $configError}
     <div class="error-message">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -778,6 +896,7 @@
   section:nth-child(3) { animation-delay: 80ms; }
   section:nth-child(4) { animation-delay: 120ms; }
   section:nth-child(5) { animation-delay: 160ms; }
+  section:nth-child(6) { animation-delay: 200ms; }
 
   .section-header {
     display: flex;
@@ -1183,5 +1302,49 @@
     border-top-color: var(--accent-blue);
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
+  }
+
+  .version-display {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .update-available {
+    margin-top: 10px;
+  }
+
+  .update-version {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-green);
+  }
+
+  .update-notes {
+    margin: 0 0 10px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    line-height: 1.5;
+  }
+
+  .update-progress {
+    margin-top: 10px;
+  }
+
+  .progress-bar {
+    height: 4px;
+    background: var(--bg-elevated);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent-blue);
+    border-radius: 2px;
+    transition: width 0.2s;
   }
 </style>

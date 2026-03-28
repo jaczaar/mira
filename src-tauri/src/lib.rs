@@ -29,6 +29,7 @@ use jira::{
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_updater::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
