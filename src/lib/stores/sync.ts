@@ -1,6 +1,7 @@
 import { writable, get } from "svelte/store";
 import * as api from "../api";
 import { config } from "./config";
+import { getAccountForCalendar } from "./calendar";
 import { tasks, updateTaskCalendarEvent, clearTaskCalendarEvent } from "./tasks";
 import type { SyncedTask } from "./tasks";
 import type { CreateEventRequest } from "../api";
@@ -99,7 +100,7 @@ export async function syncTasksToCalendar(): Promise<SyncResult> {
 
       // For now, always create new events
       // TODO: Check for existing events and update instead
-      const eventUid = await api.createEvent(eventRequest);
+      const eventUid = await api.createEvent(getAccountForCalendar(currentConfig.selected_calendar) ?? "", eventRequest);
       updateTaskCalendarEvent(task.key, eventUid);
       result.created++;
     } catch (error) {
@@ -116,7 +117,7 @@ export async function syncTasksToCalendar(): Promise<SyncResult> {
   for (const task of completedTasks) {
     try {
       if (task.calendar_event_uid && currentConfig.selected_calendar) {
-        await api.deleteEvent(task.calendar_event_uid, currentConfig.selected_calendar);
+        await api.deleteEvent(getAccountForCalendar(currentConfig.selected_calendar) ?? "", task.calendar_event_uid, currentConfig.selected_calendar);
         clearTaskCalendarEvent(task.key);
         result.deleted++;
       }
@@ -170,6 +171,7 @@ export async function syncCalendarToWorklogs(
 
   try {
     const events = await api.getEventsForDateRange(
+      getAccountForCalendar(currentConfig.selected_calendar) ?? "",
       currentConfig.selected_calendar,
       startDate,
       endDate

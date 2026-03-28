@@ -5,6 +5,7 @@
   import { updatePRCalendarEvent } from "../stores/github";
   import * as api from "../api";
   import type { CalendarEvent } from "../api";
+  import { getAccountForCalendar } from "../stores/calendar";
   import {
     format,
     parseISO,
@@ -116,6 +117,7 @@
       const endDateStr = format(nextDay, "yyyy-MM-dd");
 
       const events = await api.getEventsForDateRange(
+        getAccountForCalendar($config.selected_calendar!) ?? "",
         $config.selected_calendar!,
         dateStr,
         endDateStr
@@ -391,6 +393,7 @@
       const searchKey = pr.repo_name;
       const events = await Promise.race([
         api.getEventsForDateRange(
+          getAccountForCalendar(calendarName) ?? "",
           calendarName,
           format(today, "yyyy-MM-dd"),
           format(endDate, "yyyy-MM-dd"),
@@ -482,7 +485,7 @@
 
   async function handleDeleteEvent(calendarEvent: CalendarEvent) {
     try {
-      await api.deleteEvent(calendarEvent.uid, calendarEvent.calendar_name);
+      await api.deleteEvent(getAccountForCalendar(calendarEvent.calendar_name) ?? "", calendarEvent.uid, calendarEvent.calendar_name);
       existingEvents = existingEvents.filter((e) => e.uid !== calendarEvent.uid);
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
@@ -527,7 +530,7 @@
       const startDateTime = parseISO(`${selectedDate}T${editTime}:00`);
       const endDateTime = addMinutes(startDateTime, totalMinutes);
 
-      await api.updateEvent({
+      await api.updateEvent(getAccountForCalendar(editingEvent.calendar_name) ?? "", {
         uid: editingEvent.uid,
         summary: formatEventTitle($config.pr_event_title_template || "[PR Review] {repo}: {title}"),
         start_date: format(startDateTime, "yyyy-MM-dd'T'HH:mm:ss"),
@@ -578,7 +581,7 @@
         const startDateTime = parseISO(`${slot.date}T${slot.time}:00`);
         const endDateTime = addMinutes(startDateTime, totalMinutes);
 
-        const eventUid = await api.createEvent({
+        const eventUid = await api.createEvent(getAccountForCalendar($config.selected_calendar!) ?? "", {
           summary: title,
           start_date: format(startDateTime, "yyyy-MM-dd'T'HH:mm:ss"),
           end_date: format(endDateTime, "yyyy-MM-dd'T'HH:mm:ss"),

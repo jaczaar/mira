@@ -39,7 +39,7 @@
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.02em;
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
     transition: all 0.3s var(--ease-out);
   }
 

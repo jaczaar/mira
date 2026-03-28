@@ -8,6 +8,7 @@
   import PRList from "../lib/components/PRList.svelte";
   import PRScheduler from "../lib/components/PRScheduler.svelte";
   import JiraLinkModal from "../lib/components/JiraLinkModal.svelte";
+  import Connectors from "../lib/components/Connectors.svelte";
   import { loadAssignedTasks, tasks } from "../lib/stores/tasks";
   import { loadConfig, config, hasToken } from "../lib/stores/config";
   import { syncState } from "../lib/stores/sync";
@@ -28,6 +29,7 @@
 
   type ViewFilter = "all" | "tasks" | "prs" | "scheduled" | "needs-action";
   let viewFilter = $state<ViewFilter>("all");
+  let compactMode = $state(false);
 
   onMount(async () => {
     await loadConfig();
@@ -172,8 +174,8 @@
         </svg>
       </div>
       <h2>Welcome to Mira</h2>
-      <p>Get started by configuring your connections in Settings.</p>
-      <p class="sub">Connect to Jira for tasks and/or GitHub for PR reviews.</p>
+      <p>Connect your tools below to get started.</p>
+      <p class="sub">Jira for tasks, GitHub for PRs, Google Calendar for scheduling.</p>
     </div>
   {:else}
     <SyncControls />
@@ -224,6 +226,15 @@
       >
         Needs Action
       </button>
+      <button class="density-btn" class:active={compactMode} onclick={() => compactMode = !compactMode} title={compactMode ? "Comfortable view" : "Compact view"}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          {#if compactMode}
+            <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+          {:else}
+            <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+          {/if}
+        </svg>
+      </button>
       {#if $hasGitHubToken}
         <button class="refresh-btn" onclick={handleRefreshPRs} disabled={$prsLoading}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -256,9 +267,9 @@
           <p>No items to display</p>
         </div>
       {:else}
-        <div class="combined-list">
+        <div class="combined-list" class:compact={compactMode}>
           {#each filteredItems as workItem, i (workItem.type + "-" + (workItem.type === "task" ? workItem.item.id : workItem.item.id))}
-            <div class="work-item" class:task-item={workItem.type === "task"} class:pr-item={workItem.type === "pr"} style="animation: fadeInUp 0.3s var(--ease-out) {Math.min(i, 15) * 30}ms both">
+            <div class="work-item" class:compact={compactMode} class:task-item={workItem.type === "task"} class:pr-item={workItem.type === "pr"} style="animation: fadeInUp 0.3s var(--ease-out) {Math.min(i, 15) * 30}ms both">
               {#if workItem.type === "task"}
                 <div class="item-type-indicator task"></div>
                 <div class="item-content">
@@ -333,6 +344,8 @@
       {/if}
     {/if}
   {/if}
+
+  <Connectors />
 </div>
 
 {#if taskToSchedule}
@@ -439,6 +452,7 @@
     font-size: 14px;
   }
 
+
   .filter-tabs {
     display: flex;
     gap: 4px;
@@ -471,6 +485,7 @@
 
   .filter-tab.active {
     color: var(--text-primary);
+    background: var(--bg-hover);
   }
 
   .filter-tab .count {
@@ -509,7 +524,6 @@
     font-size: 12px;
     color: var(--text-secondary);
     cursor: pointer;
-    margin-left: auto;
     transition: all 0.15s var(--ease-out);
   }
 
@@ -562,7 +576,7 @@
   }
 
   .work-item:hover {
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--bg-hover);
   }
 
   .item-type-indicator {
@@ -757,5 +771,46 @@
 
   .act-btn.ghost {
     color: var(--text-tertiary);
+  }
+
+  .density-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-default);
+    background: transparent;
+    border-radius: 7px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    margin-left: auto;
+    transition: all 0.15s var(--ease-out);
+  }
+
+  .density-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+    border-color: var(--border-strong);
+  }
+
+  .density-btn.active {
+    color: var(--accent-blue);
+    border-color: var(--accent-blue-dim);
+    background: var(--accent-blue-dim);
+  }
+
+  .work-item.compact {
+    padding: 8px 4px;
+    gap: 10px;
+  }
+
+  .work-item.compact .item-summary {
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+
+  .work-item.compact .item-meta {
+    display: none;
   }
 </style>

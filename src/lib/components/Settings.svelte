@@ -179,7 +179,7 @@
     googleConnectionMessage = "";
     googleAuthLoading.set(true);
     try {
-      await googleAuthSignOut();
+      await googleAuthSignOut($googleAccount?.email ?? "");
       googleAccount.set(null);
       selectedCalendar = null;
       await handleSaveConfig();

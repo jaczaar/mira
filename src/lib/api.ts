@@ -177,32 +177,35 @@ export async function getIssueStatus(issueKey: string): Promise<SimpleIssue> {
 }
 
 // Calendar commands
-export async function getCalendars(): Promise<CalendarInfo[]> {
-  return invoke<CalendarInfo[]>("google_list_calendars");
+export async function getCalendars(accountEmail: string): Promise<CalendarInfo[]> {
+  return invoke<CalendarInfo[]>("google_list_calendars", { accountEmail });
 }
 
-export async function createEvent(request: CreateEventRequest): Promise<string> {
-  return invoke<string>("google_create_event", { request });
+export async function createEvent(accountEmail: string, request: CreateEventRequest): Promise<string> {
+  return invoke<string>("google_create_event", { accountEmail, request });
 }
 
-export async function updateEvent(request: UpdateEventRequest): Promise<void> {
-  return invoke("google_update_event", { request });
+export async function updateEvent(accountEmail: string, request: UpdateEventRequest): Promise<void> {
+  return invoke("google_update_event", { accountEmail, request });
 }
 
 export async function deleteEvent(
+  accountEmail: string,
   uid: string,
   calendarName: string
 ): Promise<void> {
-  return invoke("google_delete_event", { uid, calendarName });
+  return invoke("google_delete_event", { accountEmail, uid, calendarName });
 }
 
 export async function getEventsForDateRange(
+  accountEmail: string,
   calendarName: string,
   startDate: string,
   endDate: string,
   searchText?: string
 ): Promise<CalendarEvent[]> {
   return invoke<CalendarEvent[]>("google_list_events", {
+    accountEmail,
     calendarName,
     startDate,
     endDate,
@@ -219,12 +222,12 @@ export async function googleAuthWait(): Promise<GoogleAccountInfo> {
   return invoke<GoogleAccountInfo>("google_auth_wait");
 }
 
-export async function googleAuthStatus(): Promise<GoogleAccountInfo | null> {
-  return invoke<GoogleAccountInfo | null>("google_auth_status");
+export async function googleAuthStatus(): Promise<GoogleAccountInfo[]> {
+  return invoke<GoogleAccountInfo[]>("google_auth_status");
 }
 
-export async function googleAuthSignOut(): Promise<void> {
-  return invoke("google_auth_sign_out");
+export async function googleAuthSignOut(accountEmail: string): Promise<void> {
+  return invoke("google_auth_sign_out", { accountEmail });
 }
 
 // GitHub commands
@@ -250,6 +253,46 @@ export async function deleteGitHubToken(): Promise<void> {
 
 export async function hasGitHubToken(): Promise<boolean> {
   return invoke<boolean>("has_github_token");
+}
+
+// GitHub Device Flow OAuth
+export interface DeviceCodeResponse {
+  device_code: string;
+  user_code: string;
+  verification_uri: string;
+  expires_in: number;
+  interval: number;
+}
+
+export async function githubDeviceFlowStart(
+  clientId: string
+): Promise<DeviceCodeResponse> {
+  return invoke<DeviceCodeResponse>("github_device_flow_start", { clientId });
+}
+
+export async function githubDeviceFlowPoll(
+  clientId: string,
+  deviceCode: string
+): Promise<string> {
+  return invoke<string>("github_device_flow_poll", { clientId, deviceCode });
+}
+
+// Jira OAuth 2.0 (3LO)
+export interface JiraOAuthResult {
+  display_name: string;
+  email: string;
+  site_url: string;
+}
+
+export async function jiraAuthStart(
+  clientId: string,
+  clientSecret: string
+): Promise<{ auth_url: string }> {
+  return invoke<{ auth_url: string }>("jira_auth_start", { clientId, clientSecret });
+}
+
+export async function jiraAuthWait(): Promise<JiraOAuthResult> {
+  return invoke<JiraOAuthResult>("jira_auth_wait");
 }
 
 // Claude chat types

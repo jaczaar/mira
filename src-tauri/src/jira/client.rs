@@ -36,10 +36,14 @@ impl JiraClient {
     pub fn new(base_url: &str, email: &str, api_token: &str) -> Result<Self, JiraError> {
         let mut headers = HeaderMap::new();
 
-        // Create Basic Auth header
-        let auth_string = format!("{}:{}", email, api_token);
-        let encoded = base64_encode(&auth_string);
-        let auth_value = format!("Basic {}", encoded);
+        // Auto-detect auth mode: OAuth tokens (JWT) start with "ey", PATs don't
+        let auth_value = if api_token.starts_with("ey") {
+            format!("Bearer {}", api_token)
+        } else {
+            let auth_string = format!("{}:{}", email, api_token);
+            let encoded = base64_encode(&auth_string);
+            format!("Basic {}", encoded)
+        };
 
         headers.insert(
             AUTHORIZATION,

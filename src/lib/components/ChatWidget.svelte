@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import {
     chatSession,
     chatLoading,
@@ -20,26 +21,25 @@
 
   interface Props {
     repoPath: string;
+    embedded?: boolean;
   }
 
-  let { repoPath }: Props = $props();
+  let { repoPath, embedded = false }: Props = $props();
 
-  let isExpanded = $state(false);
   let inputText = $state("");
   let messagesEl: HTMLDivElement | undefined = $state();
   let hasGhToken = $state(false);
   let showPRForm = $state(false);
 
-  async function handleToggle() {
-    isExpanded = !isExpanded;
-    if (isExpanded && !$claudeCheckDone) {
+  onMount(async () => {
+    if (embedded && !$claudeCheckDone) {
       await checkClaude();
       hasGhToken = await hasGitHubToken();
       if ($claudeInstalled && !$chatSession) {
         await startSession(repoPath);
       }
     }
-  }
+  });
 
   async function handleSend() {
     const msg = inputText.trim();
@@ -68,41 +68,29 @@
   });
 </script>
 
-{#if !isExpanded}
-  <button class="chat-bubble" onclick={handleToggle} title="Claude Code Chat">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  </button>
-{:else}
-  <div class="chat-panel">
-    <div class="chat-header">
-      <div class="chat-title">
-        <div class="chat-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        </div>
-        <span>Claude Code</span>
-        {#if $chatLoading}
-          <span class="streaming-indicator"></span>
-        {/if}
+<div class="chat-page">
+  <div class="chat-header">
+    <div class="chat-title">
+      <div class="chat-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
       </div>
-      <div class="chat-actions">
-        {#if $chatSession}
-          <button class="icon-btn" onclick={stopSession} title="End session">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-            </svg>
-          </button>
-        {/if}
-        <button class="icon-btn" onclick={handleToggle} title="Minimize">
+      <span>Claude Code</span>
+      {#if $chatLoading}
+        <span class="streaming-indicator"></span>
+      {/if}
+    </div>
+    <div class="chat-actions">
+      {#if $chatSession}
+        <button class="icon-btn" onclick={stopSession} title="End session">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="5" y1="12" x2="19" y2="12" />
+            <rect x="3" y="3" width="18" height="18" rx="2" />
           </svg>
         </button>
-      </div>
+      {/if}
     </div>
+  </div>
 
     <div class="chat-body" bind:this={messagesEl}>
       {#if !$claudeCheckDone}
@@ -209,50 +197,15 @@
         </div>
       </div>
     {/if}
-  </div>
-{/if}
+</div>
 
 <style>
-  .chat-bubble {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
-    background: var(--bg-elevated);
-    color: var(--accent-blue);
-    border: 1px solid var(--border-default);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: var(--shadow-lg);
-    transition: all 0.25s var(--ease-out);
-  }
-
-  .chat-bubble:hover {
-    transform: translateY(-2px);
-    border-color: var(--accent-blue);
-    box-shadow: var(--shadow-lg), var(--shadow-glow-blue);
-    background: var(--accent-blue-dim);
-  }
-
-  .chat-panel {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
-    width: 400px;
-    height: 560px;
-    background: var(--bg-surface);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-default);
-    box-shadow: var(--shadow-lg);
+  .chat-page {
+    max-width: 720px;
+    margin: 0 auto;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
     animation: fadeInUp 0.3s var(--ease-out);
   }
 

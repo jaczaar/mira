@@ -2,6 +2,7 @@ import { writable, get } from "svelte/store";
 import * as api from "../api";
 import type { SimpleIssue, CalendarEvent } from "../api";
 import { config } from "./config";
+import { getAccountForCalendar } from "./calendar";
 import { format, addDays, subDays } from "date-fns";
 
 export interface SyncedTask extends SimpleIssue {
@@ -75,6 +76,7 @@ export async function loadAssignedTasks(customJql?: string): Promise<void> {
 
         // Get all events for the date range - we'll match by task keys
         const events = await api.getEventsForDateRange(
+          getAccountForCalendar(currentConfig.selected_calendar) ?? "",
           currentConfig.selected_calendar,
           startDate,
           endDate
@@ -122,6 +124,7 @@ export async function searchTasks(
         const endDate = format(futureDate, "yyyy-MM-dd");
 
         const events = await api.getEventsForDateRange(
+          getAccountForCalendar(currentConfig.selected_calendar) ?? "",
           currentConfig.selected_calendar,
           startDate,
           endDate

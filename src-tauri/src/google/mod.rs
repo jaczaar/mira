@@ -18,7 +18,10 @@ use crate::config::{get_config, ConfigError};
 
 use client::GoogleClient;
 use error::GoogleError;
-use token_store::{delete_token, load_token, save_token};
+use token_store::{
+    delete_token_for, list_accounts, load_legacy_token, load_token_for, save_token_for,
+    delete_legacy_token,
+};
 use types::{
     AuthStartResponse, CalendarEvent, CalendarInfo, CreateEventRequest, GoogleAccountInfo,
     GoogleToken, UpdateEventRequest,
@@ -82,50 +85,70 @@ pub async fn google_auth_wait(state: tauri::State<'_, AuthState>) -> Result<Goog
     Ok(account)
 }
 
+/// Returns all connected accounts with their info
 #[tauri::command]
-pub async fn google_auth_status() -> Result<Option<GoogleAccountInfo>, GoogleError> {
+pub async fn google_auth_status() -> Result<Vec<GoogleAccountInfo>, GoogleError> {
     let config = get_config()?;
     if config.google_client_id.is_empty() {
-        return Ok(None);
+        return Ok(vec![]);
     }
 
-    let client_secret = if config.google_client_secret.is_empty() {
-        None
-    } else {
-        Some(config.google_client_secret)
-    };
-    let client = GoogleClient::new(config.google_client_id, client_secret)?;
-    let token = match load_token()? {
-        Some(token) => token,
-        None => return Ok(None),
-    };
-
-    let token = ensure_valid_token(&client, token).await?;
-    let account = client.get_user_info(&token.access_token).await?;
-    Ok(Some(account))
-}
-
-#[tauri::command]
-pub async fn google_auth_sign_out() -> Result<(), GoogleError> {
-    delete_token()
-}
-
-#[tauri::command]
-pub async fn google_list_calendars() -> Result<Vec<CalendarInfo>, GoogleError> {
     let client = build_client()?;
-    let token = get_access_token(&client).await?;
+
+    // Migrate legacy single-token if it exists
+    if let Some(legacy_token) = load_legacy_token()? {
+        let token = ensure_valid_token(&client, legacy_token).await?;
+        if let Ok(account) = client.get_user_info(&token.access_token).await {
+            save_token_for(&account.email, &token)?;
+            let _ = delete_legacy_token();
+        }
+    }
+
+    let emails = list_accounts()?;
+    let mut accounts = Vec::new();
+    for email in emails {
+        if let Some(token) = load_token_for(&email)? {
+            match ensure_valid_token(&client, token).await {
+                Ok(valid_token) => {
+                    match client.get_user_info(&valid_token.access_token).await {
+                        Ok(account) => {
+                            // Re-save in case token was refreshed
+                            let _ = save_token_for(&account.email, &valid_token);
+                            accounts.push(account);
+                        }
+                        Err(_) => {} // skip accounts with invalid tokens
+                    }
+                }
+                Err(_) => {} // skip accounts with expired/invalid tokens
+            }
+        }
+    }
+
+    Ok(accounts)
+}
+
+#[tauri::command]
+pub async fn google_auth_sign_out(account_email: String) -> Result<(), GoogleError> {
+    delete_token_for(&account_email)
+}
+
+#[tauri::command]
+pub async fn google_list_calendars(account_email: String) -> Result<Vec<CalendarInfo>, GoogleError> {
+    let client = build_client()?;
+    let token = get_access_token_for(&client, &account_email).await?;
     client.list_calendars(&token.access_token).await
 }
 
 #[tauri::command]
 pub async fn google_list_events(
+    account_email: String,
     calendar_name: String,
     start_date: String,
     end_date: String,
     search_text: Option<String>,
 ) -> Result<Vec<CalendarEvent>, GoogleError> {
     let client = build_client()?;
-    let token = get_access_token(&client).await?;
+    let token = get_access_token_for(&client, &account_email).await?;
     client
         .list_events(
             &token.access_token,
@@ -138,23 +161,23 @@ pub async fn google_list_events(
 }
 
 #[tauri::command]
-pub async fn google_create_event(request: CreateEventRequest) -> Result<String, GoogleError> {
+pub async fn google_create_event(account_email: String, request: CreateEventRequest) -> Result<String, GoogleError> {
     let client = build_client()?;
-    let token = get_access_token(&client).await?;
+    let token = get_access_token_for(&client, &account_email).await?;
     client.create_event(&token.access_token, request).await
 }
 
 #[tauri::command]
-pub async fn google_update_event(request: UpdateEventRequest) -> Result<(), GoogleError> {
+pub async fn google_update_event(account_email: String, request: UpdateEventRequest) -> Result<(), GoogleError> {
     let client = build_client()?;
-    let token = get_access_token(&client).await?;
+    let token = get_access_token_for(&client, &account_email).await?;
     client.update_event(&token.access_token, request).await
 }
 
 #[tauri::command]
-pub async fn google_delete_event(uid: String, calendar_name: String) -> Result<(), GoogleError> {
+pub async fn google_delete_event(account_email: String, uid: String, calendar_name: String) -> Result<(), GoogleError> {
     let client = build_client()?;
-    let token = get_access_token(&client).await?;
+    let token = get_access_token_for(&client, &account_email).await?;
     client
         .delete_event(&token.access_token, &calendar_name, &uid)
         .await
@@ -175,11 +198,13 @@ fn build_client() -> Result<GoogleClient, GoogleError> {
     GoogleClient::new(config.google_client_id, client_secret)
 }
 
-async fn get_access_token(client: &GoogleClient) -> Result<GoogleToken, GoogleError> {
-    let token = load_token()?.ok_or_else(|| {
-        GoogleError::Auth("Google account is not connected".to_string())
+async fn get_access_token_for(client: &GoogleClient, email: &str) -> Result<GoogleToken, GoogleError> {
+    let token = load_token_for(email)?.ok_or_else(|| {
+        GoogleError::Auth(format!("Google account '{}' is not connected", email))
     })?;
-    ensure_valid_token(client, token).await
+    let valid = ensure_valid_token(client, token).await?;
+    let _ = save_token_for(email, &valid);
+    Ok(valid)
 }
 
 async fn ensure_valid_token(
@@ -196,7 +221,6 @@ async fn ensure_valid_token(
         .clone()
         .ok_or_else(|| GoogleError::Auth("Missing Google refresh token".to_string()))?;
     let refreshed = client.refresh_token(&refresh_token).await?;
-    save_token(&refreshed)?;
     Ok(refreshed)
 }
 
@@ -283,9 +307,11 @@ async fn handle_auth_callback(
     let token = client
         .exchange_code(&code, &code_verifier, &redirect_uri)
         .await?;
-    save_token(&token)?;
 
-    client.get_user_info(&token.access_token).await
+    let account = client.get_user_info(&token.access_token).await?;
+    save_token_for(&account.email, &token)?;
+
+    Ok(account)
 }
 
 async fn send_auth_response(socket: &mut tokio::net::TcpStream) -> Result<(), GoogleError> {

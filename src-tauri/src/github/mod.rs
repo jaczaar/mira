@@ -6,6 +6,7 @@ use crate::config::{get_config, ConfigError};
 use client::GitHubClient;
 use error::GitHubError;
 use types::SimplePullRequest;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
 pub enum GitHubCommandError {
@@ -104,3 +105,137 @@ pub use crate::config::{
     has_github_token,
     save_github_token,
 };
+
+// --- GitHub Device Flow OAuth ---
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeviceCodeResponse {
+    pub device_code: String,
+    pub user_code: String,
+    pub verification_uri: String,
+    pub expires_in: u64,
+    pub interval: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeviceFlowTokenResponse {
+    pub access_token: String,
+    pub token_type: String,
+    pub scope: String,
+}
+
+#[tauri::command]
+pub async fn github_device_flow_start(
+    client_id: String,
+) -> Result<DeviceCodeResponse, GitHubCommandError> {
+    let http = reqwest::Client::new();
+
+    let response = http
+        .post("https://github.com/login/device/code")
+        .header("Accept", "application/json")
+        .form(&[
+            ("client_id", client_id.as_str()),
+            ("scope", "repo read:user"),
+        ])
+        .send()
+        .await
+        .map_err(|e| GitHubError::Request(e.to_string()))?;
+
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .map_err(|e| GitHubError::Request(e.to_string()))?;
+
+    if !status.is_success() {
+        return Err(GitHubError::Api {
+            status: status.as_u16(),
+            message: body,
+        }
+        .into());
+    }
+
+    let device_code: DeviceCodeResponse = serde_json::from_str(&body)
+        .map_err(|e| GitHubError::Parse(format!("{}: {}", e, body)))?;
+
+    Ok(device_code)
+}
+
+#[tauri::command]
+pub async fn github_device_flow_poll(
+    client_id: String,
+    device_code: String,
+) -> Result<String, GitHubCommandError> {
+    let http = reqwest::Client::new();
+
+    let response = http
+        .post("https://github.com/login/oauth/access_token")
+        .header("Accept", "application/json")
+        .form(&[
+            ("client_id", client_id.as_str()),
+            ("device_code", device_code.as_str()),
+            ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
+        ])
+        .send()
+        .await
+        .map_err(|e| GitHubError::Request(e.to_string()))?;
+
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .map_err(|e| GitHubError::Request(e.to_string()))?;
+
+    if !status.is_success() {
+        return Err(GitHubError::Api {
+            status: status.as_u16(),
+            message: body,
+        }
+        .into());
+    }
+
+    // GitHub returns errors in the JSON body even with 200 status
+    let json: serde_json::Value = serde_json::from_str(&body)
+        .map_err(|e| GitHubError::Parse(e.to_string()))?;
+
+    if let Some(error) = json.get("error").and_then(|e| e.as_str()) {
+        match error {
+            "authorization_pending" => {
+                return Err(GitHubError::Auth("authorization_pending".to_string()).into());
+            }
+            "slow_down" => {
+                return Err(GitHubError::Auth("slow_down".to_string()).into());
+            }
+            "expired_token" => {
+                return Err(GitHubError::Auth("Device code expired. Please try again.".to_string()).into());
+            }
+            "access_denied" => {
+                return Err(GitHubError::Auth("Access denied by user.".to_string()).into());
+            }
+            other => {
+                let desc = json
+                    .get("error_description")
+                    .and_then(|d| d.as_str())
+                    .unwrap_or(other);
+                return Err(GitHubError::Auth(desc.to_string()).into());
+            }
+        }
+    }
+
+    let access_token = json
+        .get("access_token")
+        .and_then(|t| t.as_str())
+        .ok_or_else(|| GitHubError::Parse("No access_token in response".to_string()))?;
+
+    // Save the token
+    crate::config::save_github_token(access_token.to_string())?;
+
+    // Fetch username and save to config
+    let client = GitHubClient::new(access_token)?;
+    let user = client.get_user().await?;
+    let mut config = get_config()?;
+    config.github_username = user.login.clone();
+    crate::config::save_config(config)?;
+
+    Ok(user.name.unwrap_or(user.login))
+}

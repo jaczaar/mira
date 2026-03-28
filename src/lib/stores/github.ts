@@ -2,6 +2,7 @@ import { writable, get } from "svelte/store";
 import * as api from "../api";
 import type { SimplePullRequest, CalendarEvent } from "../api";
 import { config } from "./config";
+import { getAccountForCalendar } from "./calendar";
 import { format, addDays, subDays } from "date-fns";
 
 // Extended PR type with scheduling state
@@ -70,6 +71,7 @@ export async function loadPullRequests(): Promise<void> {
 
         // Search for PR review events - look for "[PR Review]" or repo names
         const events = await api.getEventsForDateRange(
+          getAccountForCalendar(currentConfig.selected_calendar) ?? "",
           currentConfig.selected_calendar,
           startDate,
           endDate,

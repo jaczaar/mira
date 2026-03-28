@@ -12,7 +12,7 @@ use config::{
     delete_github_token, delete_jira_token, get_config, get_github_token, get_jira_token,
     has_github_token, has_jira_token, save_config, save_github_token, save_jira_token,
 };
-use github::{get_pull_requests, test_github_connection};
+use github::{get_pull_requests, test_github_connection, github_device_flow_start, github_device_flow_poll};
 use google::{
     google_auth_sign_out, google_auth_start, google_auth_status, google_auth_wait,
     google_create_event, google_delete_event, google_list_calendars, google_list_events,
@@ -22,6 +22,7 @@ use tauri::menu::{MenuBuilder, SubmenuBuilder};
 use tauri::Emitter;
 use jira::{
     create_worklog, get_assigned_issues, get_issue_status, search_issues, test_jira_connection,
+    jira_auth_start, jira_auth_wait, JiraAuthState,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -62,6 +63,7 @@ pub fn run() {
             Ok(())
         })
         .manage(AuthState::default())
+        .manage(JiraAuthState::default())
         .manage(ChatState::default())
         .invoke_handler(tauri::generate_handler![
             // Config commands
@@ -81,9 +83,13 @@ pub fn run() {
             create_worklog,
             test_jira_connection,
             get_issue_status,
+            jira_auth_start,
+            jira_auth_wait,
             // GitHub commands
             get_pull_requests,
             test_github_connection,
+            github_device_flow_start,
+            github_device_flow_poll,
             // Google Calendar commands
             google_auth_start,
             google_auth_wait,

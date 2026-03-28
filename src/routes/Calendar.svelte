@@ -6,22 +6,51 @@
     calendarEvents,
     eventsLoading,
     eventsError,
-    loadCalendars,
+    accountCalendars,
+    loadCalendarsForAllAccounts,
   } from "../lib/stores/calendar";
   import { loadConfig, config, saveConfig } from "../lib/stores/config";
   import {
-    googleAccount,
+    googleAccounts,
     loadGoogleAuthStatus,
   } from "../lib/stores/google";
   import * as api from "../lib/api";
   import { googleAuthStart, googleAuthWait } from "../lib/api";
   import { hasEmbeddedCredentials, EMBEDDED_GOOGLE_CLIENT_ID, EMBEDDED_GOOGLE_CLIENT_SECRET } from "../lib/google-oauth";
+  import { themeMode, type ThemeMode } from "../lib/stores/theme";
   import type { CalendarEvent } from "../lib/api";
 
   let currentDate = $state(new Date());
+  let showCalendarMenu = $state(false);
+
+  function setTheme(mode: ThemeMode) {
+    themeMode.set(mode);
+  }
   let viewMode = $state<"week" | "day">("week");
 
-  let showConnect = $state(false);
+  const EVENT_COLORS = [
+    { bg: "rgba(59, 130, 246, 0.12)", border: "#5b9cf5", text: "#5b9cf5" },   // blue
+    { bg: "rgba(168, 85, 247, 0.12)", border: "#a78bfa", text: "#a78bfa" },   // purple
+    { bg: "rgba(236, 72, 153, 0.12)", border: "#f472b6", text: "#f472b6" },   // pink
+    { bg: "rgba(245, 158, 11, 0.12)", border: "#f59e0b", text: "#f59e0b" },   // amber
+    { bg: "rgba(16, 185, 129, 0.12)", border: "#34d399", text: "#34d399" },   // emerald
+    { bg: "rgba(6, 182, 212, 0.12)", border: "#22d3ee", text: "#22d3ee" },    // cyan
+    { bg: "rgba(244, 63, 94, 0.12)", border: "#fb7185", text: "#fb7185" },    // rose
+    { bg: "rgba(132, 204, 22, 0.12)", border: "#a3e635", text: "#a3e635" },   // lime
+  ];
+
+  function hashString(s: string): number {
+    let hash = 0;
+    for (let i = 0; i < s.length; i++) {
+      hash = ((hash << 5) - hash + s.charCodeAt(i)) | 0;
+    }
+    return Math.abs(hash);
+  }
+
+  function getEventColor(event: CalendarEvent) {
+    return EVENT_COLORS[hashString(event.calendar_name) % EVENT_COLORS.length];
+  }
+
   let connectLoading = $state(false);
   let connectError = $state<string | null>(null);
   let enabledCalendars = $state<Set<string>>(new Set());
@@ -30,17 +59,19 @@
     !!$config.google_client_id && !!$config.google_client_secret
   );
 
-  async function handleAddClick() {
-    showConnect = !showConnect;
-  }
+  const hasAnyAccounts = $derived($googleAccounts.length > 0);
 
+  function getAccountForCalendar(calUid: string): string | undefined {
+    for (const [email, cals] of $accountCalendars) {
+      if (cals.some(c => c.uid === calUid)) return email;
+    }
+    return undefined;
+  }
 
   async function handleSignIn() {
     connectLoading = true;
     connectError = null;
-    showConnect = false;
     try {
-      // If no user creds in config, seed from embedded
       if (!hasAnyCreds && hasEmbeddedCredentials()) {
         await saveConfig({
           ...$config,
@@ -50,22 +81,23 @@
       }
       const { auth_url } = await googleAuthStart();
       await openUrl(auth_url);
-      const account = await googleAuthWait();
-      googleAccount.set(account);
-      await loadCalendars();
+      await googleAuthWait();
+      await loadGoogleAuthStatus();
+      await loadCalendarsForAllAccounts($googleAccounts.map(a => a.email));
+      // Enable all calendars from the new account
+      enabledCalendars = new Set([...enabledCalendars, ...$calendars.map(c => c.uid)]);
     } catch (err) {
       connectError = err instanceof Error ? err.message : String(err);
-      showConnect = true;
     } finally {
       connectLoading = false;
     }
   }
 
 
-  const START_HOUR = 7;
-  const END_HOUR = 21;
+  const START_HOUR = 8;
+  const END_HOUR = 18;
   const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR);
-  const HOUR_HEIGHT = 48;
+  const HOUR_HEIGHT = 56;
 
   const weekStart = $derived.by(() => {
     const d = new Date(currentDate);
@@ -141,7 +173,12 @@
     const start = new Date(event.start_date);
     const end = new Date(event.end_date);
     const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    return durationHours >= 23 || (start.getHours() === 0 && start.getMinutes() === 0 && end.getHours() === 0 && end.getMinutes() === 0);
+    if (durationHours >= 23) return true;
+    if (start.getHours() === 0 && start.getMinutes() === 0 && end.getHours() === 0 && end.getMinutes() === 0) return true;
+    const startDate = event.start_date.split("T")[0];
+    const endDate = event.end_date.split("T")[0];
+    if (startDate !== endDate && event.start_date.includes("T00:00:00")) return true;
+    return false;
   }
 
   function getTimedEventsForDay(day: Date): CalendarEvent[] {
@@ -160,8 +197,62 @@
       if (!isAllDay(event)) return false;
       const startStr = event.start_date.split("T")[0];
       const endStr = event.end_date.split("T")[0];
-      return startStr <= dayStr && endStr >= dayStr;
+      return startStr <= dayStr && endStr > dayStr;
     });
+  }
+
+  interface EventLayout {
+    event: CalendarEvent;
+    column: number;
+    totalColumns: number;
+  }
+
+  function layoutEventsForDay(day: Date): EventLayout[] {
+    const events = getTimedEventsForDay(day);
+    if (events.length === 0) return [];
+
+    const sorted = [...events].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+    const layouts: EventLayout[] = [];
+    const columns: { end: number }[] = [];
+
+    for (const event of sorted) {
+      const start = new Date(event.start_date).getTime();
+      const end = new Date(event.end_date).getTime();
+
+      let placed = false;
+      for (let col = 0; col < columns.length; col++) {
+        if (start >= columns[col].end) {
+          columns[col].end = end;
+          layouts.push({ event, column: col, totalColumns: 0 });
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        columns.push({ end });
+        layouts.push({ event, column: columns.length - 1, totalColumns: 0 });
+      }
+    }
+
+    // Group overlapping events and set totalColumns
+    for (let i = 0; i < layouts.length; i++) {
+      const ev = layouts[i].event;
+      const evStart = new Date(ev.start_date).getTime();
+      const evEnd = new Date(ev.end_date).getTime();
+      let maxCol = layouts[i].column;
+
+      for (let j = 0; j < layouts.length; j++) {
+        const other = layouts[j].event;
+        const otherStart = new Date(other.start_date).getTime();
+        const otherEnd = new Date(other.end_date).getTime();
+        if (otherStart < evEnd && otherEnd > evStart) {
+          maxCol = Math.max(maxCol, layouts[j].column);
+        }
+      }
+      layouts[i].totalColumns = maxCol + 1;
+    }
+
+    return layouts;
   }
 
   const hasAnyAllDayEvents = $derived(
@@ -206,9 +297,20 @@
     eventsError.set(null);
     try {
       const allEvents: CalendarEvent[] = [];
+      const seen = new Set<string>();
       for (const calId of enabledCalendars) {
-        const events = await api.getEventsForDateRange(calId, start, end);
-        allEvents.push(...events);
+        const accountEmail = getAccountForCalendar(calId);
+        if (!accountEmail) continue;
+        const events = await api.getEventsForDateRange(accountEmail, calId, start, end);
+        for (const event of events) {
+          const normStart = event.start_date.replace(/[+-]\d{2}:\d{2}$/, "").split("T")[0];
+          const normEnd = event.end_date.replace(/[+-]\d{2}:\d{2}$/, "").split("T")[0];
+          const key = `${event.summary}|${normStart}|${normEnd}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            allEvents.push(event);
+          }
+        }
       }
       calendarEvents.set(allEvents);
     } catch (error) {
@@ -222,9 +324,8 @@
     await loadConfig();
     await loadGoogleAuthStatus();
 
-    if ($googleAccount) {
-      await loadCalendars();
-      // Enable the selected calendar by default, or all if none selected
+    if ($googleAccounts.length > 0) {
+      await loadCalendarsForAllAccounts($googleAccounts.map(a => a.email));
       if ($config.selected_calendar) {
         enabledCalendars = new Set([$config.selected_calendar]);
       } else if ($calendars.length > 0) {
@@ -237,7 +338,7 @@
   $effect(() => {
     weekStart;
     enabledCalendars;
-    if ($googleAccount && enabledCalendars.size > 0) {
+    if (hasAnyAccounts && enabledCalendars.size > 0) {
       loadWeekEvents();
     }
   });
@@ -246,6 +347,67 @@
 <div class="calendar-view">
   <div class="cal-header">
     <div class="cal-nav">
+      <div class="filter-anchor">
+        <button class="nav-btn" onclick={() => showCalendarMenu = !showCalendarMenu} title="Calendars &amp; Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
+            <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
+            <line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" />
+          </svg>
+        </button>
+        {#if showCalendarMenu}
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <div class="filter-backdrop" role="presentation" onclick={() => showCalendarMenu = false}></div>
+          <div class="filter-menu">
+            {#each $googleAccounts as account}
+              <div class="filter-account">
+                <span class="filter-account-email">{account.email}</span>
+              </div>
+              {#each ($accountCalendars.get(account.email) ?? []) as cal}
+                <button class="filter-cal-item" onclick={() => toggleCalendar(cal.uid)}>
+                  <span class="filter-check" class:checked={enabledCalendars.has(cal.uid)}>
+                    {#if enabledCalendars.has(cal.uid)}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    {/if}
+                  </span>
+                  <span class="filter-cal-name">{cal.name}</span>
+                </button>
+              {/each}
+            {/each}
+            <div class="filter-divider"></div>
+            <button class="filter-add-btn" onclick={handleSignIn} disabled={connectLoading}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              {connectLoading ? "Connecting..." : "Add account"}
+            </button>
+            {#if connectError}
+              <p class="connect-error">{connectError}</p>
+            {/if}
+            <div class="filter-divider"></div>
+            <div class="theme-row">
+              <button class="theme-pill" class:active={$themeMode === "light"} onclick={() => setTheme("light")} title="Light">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+              </button>
+              <button class="theme-pill" class:active={$themeMode === "dark"} onclick={() => setTheme("dark")} title="Dark">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                </svg>
+              </button>
+              <button class="theme-pill" class:active={$themeMode === "system"} onclick={() => setTheme("system")} title="Auto">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        {/if}
+      </div>
       <button class="nav-btn" onclick={() => navigateWeek(-1)}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6" />
@@ -258,71 +420,16 @@
         </svg>
       </button>
     </div>
-    <div class="cal-center">
-      <h2 class="cal-title">
-        {weekStart.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-      </h2>
-      {#if $googleAccount && $calendars.length > 0}
-        <div class="cal-pills">
-          {#each $calendars as cal}
-            <button
-              class="cal-pill"
-              class:active={enabledCalendars.has(cal.uid)}
-              onclick={() => toggleCalendar(cal.uid)}
-              title={cal.name}
-            >
-              <span class="cal-dot" class:on={enabledCalendars.has(cal.uid)}></span>
-              {cal.name}
-            </button>
-          {/each}
-        </div>
-      {/if}
-    </div>
-    <div class="cal-actions">
-      <div class="view-toggle">
-        <button class:active={viewMode === "week"} onclick={() => (viewMode = "week")}>Week</button>
-        <button class:active={viewMode === "day"} onclick={() => (viewMode = "day")}>Day</button>
-      </div>
-      <div class="add-anchor">
-        <button
-          class="add-btn"
-          class:loading={connectLoading}
-          onclick={handleAddClick}
-          disabled={connectLoading}
-          title="Add calendar account"
-        >
-          {#if connectLoading}
-            <span class="btn-spinner"></span>
-          {:else}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          {/if}
-        </button>
-    {#if showConnect}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <div class="connect-backdrop" role="presentation" onclick={() => { showConnect = false; }}></div>
-      <div class="connect-popover">
-        <button class="google-btn" onclick={handleSignIn} disabled={connectLoading}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-          </svg>
-          {connectLoading ? "Connecting..." : "Sign in with Google"}
-        </button>
-        {#if connectError}
-          <p class="connect-error">{connectError}</p>
-        {/if}
-      </div>
-    {/if}
-      </div>
+    <h2 class="cal-title">
+      {weekStart.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+    </h2>
+    <div class="view-toggle">
+      <button class:active={viewMode === "week"} onclick={() => (viewMode = "week")}>Week</button>
+      <button class:active={viewMode === "day"} onclick={() => (viewMode = "day")}>Day</button>
     </div>
   </div>
 
-  {#if !$googleAccount}
+  {#if !hasAnyAccounts}
     <div class="empty-state">
       <div class="empty-icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -333,12 +440,36 @@
         </svg>
       </div>
       <h3>Your calendar will show here</h3>
-      <p>Press + to connect your Google account.</p>
+      <p>Connect your Google account to see events.</p>
+      <button class="connect-cta" onclick={handleSignIn} disabled={connectLoading}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        {connectLoading ? "Connecting..." : "Connect Google Account"}
+      </button>
     </div>
   {:else if $eventsLoading}
-    <div class="loading">
-      <div class="spinner"></div>
-      <span>Loading events...</span>
+    <div class="skeleton-calendar">
+      <div class="skeleton-header-row">
+        {#each Array(7) as _}
+          <div class="skeleton-day-header">
+            <div class="skeleton-line short"></div>
+            <div class="skeleton-circle"></div>
+          </div>
+        {/each}
+      </div>
+      <div class="skeleton-grid">
+        {#each Array(6) as _, i}
+          <div class="skeleton-hour" style="animation-delay: {i * 80}ms">
+            <div class="skeleton-line gutter"></div>
+            <div class="skeleton-events">
+              {#if i === 1 || i === 3}
+                <div class="skeleton-event"></div>
+              {/if}
+            </div>
+          </div>
+        {/each}
+      </div>
     </div>
   {:else}
     <div class="week-grid">
@@ -360,7 +491,8 @@
           {#each viewMode === "week" ? weekDays : [currentDate] as day}
             <div class="allday-cell" class:today={isToday(day)}>
               {#each getAllDayEventsForDay(day) as event}
-                <div class="allday-event" title={event.summary}>
+                {@const color = getEventColor(event)}
+                <div class="allday-event" title={event.summary} style="background: {color.bg}; color: {color.text}">
                   {event.summary}
                 </div>
               {/each}
@@ -385,15 +517,16 @@
                 <div class="hour-slot" style="height: {HOUR_HEIGHT}px"></div>
               {/each}
 
-              {#each getTimedEventsForDay(day) as event}
+              {#each layoutEventsForDay(day) as { event, column, totalColumns }}
                 {@const style = getEventStyle(event, day)}
+                {@const color = getEventColor(event)}
                 {#if style}
                   <div
                     class="event-block"
-                    style="top: {style.top}; height: {style.height}"
+                    style="top: {style.top}; height: {style.height}; background: {color.bg}; border-left-color: {color.border}; left: calc(3px + {column} * (100% - 6px) / {totalColumns}); width: calc((100% - 6px) / {totalColumns} - 2px)"
                     title={event.summary}
                   >
-                    <span class="event-time">{formatEventTime(event)}</span>
+                    <span class="event-time" style="color: {color.text}">{formatEventTime(event)}</span>
                     <span class="event-title">{event.summary}</span>
                   </div>
                 {/if}
@@ -438,12 +571,6 @@
     gap: 4px;
   }
 
-  .cal-center {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
   .cal-pills {
     display: flex;
     gap: 4px;
@@ -484,6 +611,162 @@
 
   .cal-dot.on {
     background: var(--accent-blue);
+  }
+
+  .theme-row {
+    display: flex;
+    gap: 2px;
+    padding: 4px 4px 2px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-sm);
+    margin: 2px;
+  }
+
+  .theme-pill {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all 0.12s var(--ease-out);
+  }
+
+  .theme-pill:hover {
+    color: var(--text-secondary);
+    background: var(--bg-hover);
+  }
+
+  .theme-pill.active {
+    color: var(--accent-blue);
+    background: var(--bg-hover);
+  }
+
+  .filter-anchor {
+    position: relative;
+    z-index: 20;
+  }
+
+  .filter-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+  }
+
+  .filter-menu {
+    position: absolute;
+    top: 36px;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    min-width: 220px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 6px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    animation: fadeInUp 0.12s var(--ease-out);
+    z-index: 100;
+  }
+
+  .filter-account {
+    padding: 6px 8px 2px;
+  }
+
+  .filter-account-email {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-tertiary);
+    letter-spacing: 0.02em;
+  }
+
+  .filter-cal-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.12s var(--ease-out);
+    text-align: left;
+  }
+
+  .filter-cal-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .filter-check {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1.5px solid var(--border-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.12s var(--ease-out);
+  }
+
+  .filter-check.checked {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: white;
+  }
+
+  .filter-cal-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .filter-divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 4px 0;
+  }
+
+  .filter-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all 0.12s var(--ease-out);
+  }
+
+  .filter-add-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .filter-add-btn:hover:not(:disabled) {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .filter-add-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .cal-actions {
@@ -542,6 +825,8 @@
     margin: 0;
     color: var(--text-primary);
     letter-spacing: -0.03em;
+    flex: 1;
+    text-align: center;
   }
 
 
@@ -606,6 +891,33 @@
     margin: 0;
     color: var(--text-tertiary);
     font-size: 14px;
+  }
+
+  .connect-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 8px 20px;
+    background: var(--gradient-brand);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s var(--ease-out);
+  }
+
+  .connect-cta:hover:not(:disabled) {
+    opacity: 0.9;
+    box-shadow: var(--shadow-glow-blue);
+  }
+
+  .connect-cta:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
 
@@ -798,7 +1110,7 @@
   }
 
   .week-grid {
-    border: 1px solid var(--border-subtle);
+    border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
     overflow: hidden;
     background: var(--bg-surface);
@@ -843,16 +1155,16 @@
   }
 
   .allday-cell.today {
-    background: rgba(124, 172, 248, 0.03);
+    background: var(--today-tint);
   }
 
   .allday-event {
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--accent-blue);
     background: var(--accent-blue-dim);
-    padding: 1px 6px;
-    border-radius: 3px;
+    padding: 2px 7px;
+    border-radius: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -862,7 +1174,7 @@
   .day-headers {
     display: flex;
     border-bottom: 1px solid var(--border-subtle);
-    background: rgba(255, 255, 255, 0.01);
+    background: var(--day-header-bg);
   }
 
   .time-gutter-header {
@@ -910,10 +1222,12 @@
   .day-num.today {
     background: var(--accent-blue);
     color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
   }
 
   .day-header.today .day-name {
     color: var(--accent-blue);
+    font-weight: 600;
   }
 
   .grid-body {
@@ -960,7 +1274,7 @@
   }
 
   .day-column.today {
-    background: rgba(124, 172, 248, 0.02);
+    background: var(--today-tint);
   }
 
   .hour-slot {
@@ -969,37 +1283,41 @@
 
   .event-block {
     position: absolute;
-    left: 2px;
-    right: 2px;
     background: var(--accent-blue-dim);
     border-left: 3px solid var(--accent-blue);
-    border-radius: 4px;
-    padding: 3px 6px;
+    border-radius: 6px;
+    padding: 4px 8px;
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.15s var(--ease-out);
+    transition: filter 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out);
     z-index: 1;
   }
 
   .event-block:hover {
-    background: var(--accent-blue-glow);
+    filter: brightness(1.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 
   .event-time {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 9px;
+    font-weight: 500;
     color: var(--accent-blue);
     display: block;
+    opacity: 0.8;
+    letter-spacing: 0.02em;
   }
 
   .event-title {
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-primary);
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    margin-top: 1px;
+    line-height: 1.3;
   }
 
   .error-banner {
@@ -1013,5 +1331,80 @@
     font-size: 13px;
     margin-top: 16px;
     border: 1px solid rgba(248, 113, 113, 0.15);
+  }
+
+  .skeleton-calendar {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--bg-surface);
+    flex: 1;
+    animation: fadeIn 0.3s var(--ease-out);
+  }
+
+  .skeleton-header-row {
+    display: flex;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 8px 0;
+    padding-left: 48px;
+  }
+
+  .skeleton-day-header {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .skeleton-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg-hover);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  .skeleton-grid {
+    padding: 8px 0;
+  }
+
+  .skeleton-hour {
+    display: flex;
+    align-items: flex-start;
+    height: 56px;
+    border-bottom: 1px solid var(--border-subtle);
+    animation: fadeIn 0.4s var(--ease-out) both;
+  }
+
+  .skeleton-line {
+    height: 10px;
+    background: var(--bg-hover);
+    border-radius: 4px;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  .skeleton-line.short {
+    width: 28px;
+  }
+
+  .skeleton-line.gutter {
+    width: 32px;
+    margin: 4px 8px;
+    flex-shrink: 0;
+  }
+
+  .skeleton-events {
+    flex: 1;
+    padding: 4px 8px;
+  }
+
+  .skeleton-event {
+    height: 36px;
+    width: 40%;
+    background: var(--bg-hover);
+    border-radius: 6px;
+    border-left: 3px solid var(--border-strong);
+    animation: pulse 1.4s ease-in-out infinite;
   }
 </style>

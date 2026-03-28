@@ -220,9 +220,14 @@
   </div>
 
   {#if $tasksLoading}
-    <div class="state-panel">
-      <div class="spinner"></div>
-      <p>Loading tasks...</p>
+    <div class="skeleton-list">
+      {#each Array(5) as _, i}
+        <div class="skeleton-card" style="animation-delay: {i * 60}ms">
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line medium"></div>
+        </div>
+      {/each}
     </div>
   {:else if $tasksError}
     <div class="state-panel error">
@@ -496,5 +501,39 @@
 
   .reset-btn:hover {
     background: rgba(91, 141, 239, 0.2);
+  }
+
+  .skeleton-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px 0;
+  }
+
+  .skeleton-card {
+    padding: 14px 16px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    animation: fadeIn 0.4s var(--ease-out) both;
+  }
+
+  .skeleton-line {
+    height: 12px;
+    background: var(--bg-hover);
+    border-radius: 4px;
+    margin-bottom: 10px;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  .skeleton-line:last-child {
+    margin-bottom: 0;
+  }
+
+  .skeleton-line.short {
+    width: 30%;
+  }
+
+  .skeleton-line.medium {
+    width: 60%;
   }
 </style>
