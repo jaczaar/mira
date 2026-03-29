@@ -17,6 +17,7 @@ export interface AppConfig {
   github_username: string;
   pr_event_title_template: string;
   pr_default_event_color: string | null;
+  calendar_colors: Record<string, number>;
 }
 
 // Jira types

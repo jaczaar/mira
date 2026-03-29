@@ -142,6 +142,7 @@
       github_username: githubUsername,
       pr_event_title_template: prEventTitleTemplate,
       pr_default_event_color: prDefaultEventColor,
+      calendar_colors: $config.calendar_colors ?? {},
     });
   }
 

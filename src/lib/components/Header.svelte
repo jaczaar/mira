@@ -33,19 +33,19 @@
 <style>
   nav {
     position: fixed;
-    bottom: 20px;
+    top: 16px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 100;
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 6px;
+    padding: 3px;
     background: color-mix(in srgb, var(--bg-base) 85%, transparent);
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     border: 1px solid var(--border-default);
-    border-radius: 16px;
+    border-radius: 12px;
     box-shadow: var(--header-shadow);
   }
 
@@ -53,7 +53,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 12px;
+    padding: 5px 10px;
     border: none;
     background: transparent;
     color: var(--text-tertiary);
@@ -61,7 +61,7 @@
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    border-radius: 11px;
+    border-radius: 9px;
     transition: all 0.2s var(--ease-out);
     white-space: nowrap;
   }

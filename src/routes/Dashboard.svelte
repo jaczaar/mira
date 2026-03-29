@@ -154,6 +154,7 @@
     <div class="title-row">
       <h1>Mira</h1>
       <StatusBadge status={$syncState.status} message={$syncState.message} />
+      <div style="margin-left: auto;"><Connectors /></div>
     </div>
     <div class="stats-row">
       {#if $hasToken}
@@ -345,7 +346,7 @@
     {/if}
   {/if}
 
-  <Connectors />
+
 </div>
 
 {#if taskToSchedule}

@@ -29,14 +29,14 @@
   let viewMode = $state<"week" | "day">("week");
 
   const EVENT_COLORS = [
-    { bg: "rgba(59, 130, 246, 0.12)", border: "#5b9cf5", text: "#5b9cf5" },   // blue
-    { bg: "rgba(168, 85, 247, 0.12)", border: "#a78bfa", text: "#a78bfa" },   // purple
-    { bg: "rgba(236, 72, 153, 0.12)", border: "#f472b6", text: "#f472b6" },   // pink
-    { bg: "rgba(245, 158, 11, 0.12)", border: "#f59e0b", text: "#f59e0b" },   // amber
-    { bg: "rgba(16, 185, 129, 0.12)", border: "#34d399", text: "#34d399" },   // emerald
-    { bg: "rgba(6, 182, 212, 0.12)", border: "#22d3ee", text: "#22d3ee" },    // cyan
-    { bg: "rgba(244, 63, 94, 0.12)", border: "#fb7185", text: "#fb7185" },    // rose
-    { bg: "rgba(132, 204, 22, 0.12)", border: "#a3e635", text: "#a3e635" },   // lime
+    { bg: "rgba(59, 130, 246, 0.18)", border: "#3b82f6", text: "#93bbfd", title: "#dbeafe" },   // blue
+    { bg: "rgba(139, 92, 246, 0.18)", border: "#8b5cf6", text: "#b4a0f4", title: "#e0d5fc" },   // violet
+    { bg: "rgba(236, 72, 153, 0.18)", border: "#ec4899", text: "#f0a0c8", title: "#fce7f3" },   // pink
+    { bg: "rgba(245, 158, 11, 0.18)", border: "#f59e0b", text: "#f5c46b", title: "#fef3c7" },   // amber
+    { bg: "rgba(16, 185, 129, 0.18)", border: "#10b981", text: "#6dd7b5", title: "#d1fae5" },   // emerald
+    { bg: "rgba(6, 182, 212, 0.18)", border: "#06b6d4", text: "#67d8ec", title: "#cffafe" },    // cyan
+    { bg: "rgba(244, 63, 94, 0.18)", border: "#f43f5e", text: "#f8a0b0", title: "#ffe4e6" },    // rose
+    { bg: "rgba(34, 197, 94, 0.18)", border: "#22c55e", text: "#6ee7a0", title: "#dcfce7" },    // green
   ];
 
   function hashString(s: string): number {
@@ -47,8 +47,22 @@
     return Math.abs(hash);
   }
 
+  function getCalendarColorIndex(calendarName: string): number {
+    const custom = $config.calendar_colors?.[calendarName];
+    if (custom !== undefined && custom >= 0 && custom < EVENT_COLORS.length) return custom;
+    return hashString(calendarName) % EVENT_COLORS.length;
+  }
+
   function getEventColor(event: CalendarEvent) {
-    return EVENT_COLORS[hashString(event.calendar_name) % EVENT_COLORS.length];
+    return EVENT_COLORS[getCalendarColorIndex(event.calendar_name)];
+  }
+
+  let colorPickerCal = $state<string | null>(null);
+
+  async function setCalendarColor(calUid: string, colorIndex: number) {
+    const updated = { ...$config, calendar_colors: { ...($config.calendar_colors ?? {}), [calUid]: colorIndex } };
+    await saveConfig(updated);
+    colorPickerCal = null;
   }
 
   let connectLoading = $state(false);
@@ -97,7 +111,7 @@
   const START_HOUR = 8;
   const END_HOUR = 18;
   const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR);
-  const HOUR_HEIGHT = 56;
+  const HOUR_HEIGHT = 60;
 
   const weekStart = $derived.by(() => {
     const d = new Date(currentDate);
@@ -166,7 +180,7 @@
     const top = ((clampedStart - START_HOUR * 60) / 60) * HOUR_HEIGHT;
     const height = (durationMinutes / 60) * HOUR_HEIGHT;
 
-    return { top: `${top}px`, height: `${Math.max(height, 20)}px` };
+    return { top: `${top}px`, height: `${Math.max(height, 24)}px` };
   }
 
   function isAllDay(event: CalendarEvent): boolean {
@@ -347,6 +361,26 @@
 <div class="calendar-view">
   <div class="cal-header">
     <div class="cal-nav">
+      <button class="nav-btn" onclick={() => navigateWeek(-1)}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+      <button class="today-btn" onclick={goToToday}>Today</button>
+      <button class="nav-btn" onclick={() => navigateWeek(1)}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+      <h2 class="cal-title">
+        {weekStart.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+      </h2>
+    </div>
+    <div class="cal-right">
+      <div class="view-toggle">
+        <button class:active={viewMode === "week"} onclick={() => (viewMode = "week")}>Week</button>
+        <button class:active={viewMode === "day"} onclick={() => (viewMode = "day")}>Day</button>
+      </div>
       <div class="filter-anchor">
         <button class="nav-btn" onclick={() => showCalendarMenu = !showCalendarMenu} title="Calendars &amp; Settings">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -365,16 +399,37 @@
                 <span class="filter-account-email">{account.email}</span>
               </div>
               {#each ($accountCalendars.get(account.email) ?? []) as cal}
-                <button class="filter-cal-item" onclick={() => toggleCalendar(cal.uid)}>
-                  <span class="filter-check" class:checked={enabledCalendars.has(cal.uid)}>
-                    {#if enabledCalendars.has(cal.uid)}
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    {/if}
-                  </span>
-                  <span class="filter-cal-name">{cal.name}</span>
-                </button>
+                {@const calColor = EVENT_COLORS[getCalendarColorIndex(cal.uid)]}
+                <div class="filter-cal-row">
+                  <button class="filter-cal-item" onclick={() => toggleCalendar(cal.uid)}>
+                    <span class="filter-check" class:checked={enabledCalendars.has(cal.uid)}>
+                      {#if enabledCalendars.has(cal.uid)}
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      {/if}
+                    </span>
+                    <span class="filter-cal-name">{cal.name}</span>
+                  </button>
+                  <button
+                    class="color-dot"
+                    style="background: {calColor.border}"
+                    title="Change color"
+                    onclick={(e) => { e.stopPropagation(); colorPickerCal = colorPickerCal === cal.uid ? null : cal.uid; }}
+                  ></button>
+                  {#if colorPickerCal === cal.uid}
+                    <div class="color-picker">
+                      {#each EVENT_COLORS as c, i}
+                        <button
+                          class="color-swatch"
+                          class:active={getCalendarColorIndex(cal.uid) === i}
+                          style="background: {c.border}"
+                          onclick={(e) => { e.stopPropagation(); setCalendarColor(cal.uid, i); }}
+                        ></button>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
               {/each}
             {/each}
             <div class="filter-divider"></div>
@@ -408,24 +463,6 @@
           </div>
         {/if}
       </div>
-      <button class="nav-btn" onclick={() => navigateWeek(-1)}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </button>
-      <button class="today-btn" onclick={goToToday}>Today</button>
-      <button class="nav-btn" onclick={() => navigateWeek(1)}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </button>
-    </div>
-    <h2 class="cal-title">
-      {weekStart.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-    </h2>
-    <div class="view-toggle">
-      <button class:active={viewMode === "week"} onclick={() => (viewMode = "week")}>Week</button>
-      <button class:active={viewMode === "day"} onclick={() => (viewMode = "day")}>Day</button>
     </div>
   </div>
 
@@ -492,7 +529,7 @@
             <div class="allday-cell" class:today={isToday(day)}>
               {#each getAllDayEventsForDay(day) as event}
                 {@const color = getEventColor(event)}
-                <div class="allday-event" title={event.summary} style="background: {color.bg}; color: {color.text}">
+                <div class="allday-event" title={event.summary} style="background: {color.bg}; color: {color.title}; border-left-color: {color.border}">
                   {event.summary}
                 </div>
               {/each}
@@ -526,8 +563,7 @@
                     style="top: {style.top}; height: {style.height}; background: {color.bg}; border-left-color: {color.border}; left: calc(3px + {column} * (100% - 6px) / {totalColumns}); width: calc((100% - 6px) / {totalColumns} - 2px)"
                     title={event.summary}
                   >
-                    <span class="event-time" style="color: {color.text}">{formatEventTime(event)}</span>
-                    <span class="event-title">{event.summary}</span>
+                    <span class="event-title" style="color: {color.title}">{event.summary}</span>
                   </div>
                 {/if}
               {/each}
@@ -566,6 +602,12 @@
   }
 
   .cal-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .cal-right {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -686,11 +728,66 @@
     letter-spacing: 0.02em;
   }
 
+  .filter-cal-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .color-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-right: 6px;
+    transition: transform 0.12s var(--ease-out), border-color 0.12s var(--ease-out);
+  }
+
+  .color-dot:hover {
+    transform: scale(1.2);
+    border-color: var(--border-strong);
+  }
+
+  .color-picker {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    display: flex;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    z-index: 20;
+  }
+
+  .color-swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.1s var(--ease-out), border-color 0.1s var(--ease-out);
+  }
+
+  .color-swatch:hover {
+    transform: scale(1.2);
+  }
+
+  .color-swatch.active {
+    border-color: var(--text-primary);
+    transform: scale(1.15);
+  }
+
   .filter-cal-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     padding: 6px 8px;
     border: none;
     background: transparent;
@@ -820,13 +917,12 @@
 
   .cal-title {
     font-family: var(--font-display);
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 700;
-    margin: 0;
+    margin: 0 0 0 10px;
     color: var(--text-primary);
     letter-spacing: -0.03em;
-    flex: 1;
-    text-align: center;
+    white-space: nowrap;
   }
 
 
@@ -1122,6 +1218,7 @@
 
   .allday-row {
     display: flex;
+    align-items: center;
     border-bottom: 1px solid var(--border-subtle);
     min-height: 28px;
   }
@@ -1130,15 +1227,16 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding: 0 6px;
+    padding: 0 4px;
   }
 
   .allday-label span {
     font-family: var(--font-mono);
-    font-size: 9px;
+    font-size: 8px;
     color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.03em;
+    white-space: nowrap;
   }
 
   .allday-cell {
@@ -1161,14 +1259,19 @@
   .allday-event {
     font-size: 11px;
     font-weight: 600;
-    color: var(--accent-blue);
-    background: var(--accent-blue-dim);
-    padding: 2px 7px;
+    padding: 2px 8px;
     border-radius: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 100%;
+    border-left: 2px solid transparent;
+    transition: filter 0.12s var(--ease-out);
+  }
+
+  .allday-event:hover {
+    filter: brightness(1.15);
+    cursor: pointer;
   }
 
   .day-headers {
@@ -1186,9 +1289,10 @@
   .day-header {
     flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 1px;
+    justify-content: center;
+    gap: 6px;
     padding: 6px 4px;
     border-right: 1px solid var(--border-subtle);
   }
@@ -1208,11 +1312,11 @@
 
   .day-num {
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-secondary);
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1279,45 +1383,58 @@
 
   .hour-slot {
     border-bottom: 1px solid var(--border-subtle);
+    position: relative;
+  }
+
+  .hour-slot::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    border-bottom: 1px dashed color-mix(in srgb, var(--border-subtle) 40%, transparent);
   }
 
   .event-block {
     position: absolute;
-    background: var(--accent-blue-dim);
     border-left: 3px solid var(--accent-blue);
-    border-radius: 6px;
-    padding: 4px 8px;
+    border-radius: 5px;
+    padding: 3px 7px;
     overflow: hidden;
     cursor: pointer;
-    transition: filter 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out);
+    transition: transform 0.12s var(--ease-out), box-shadow 0.12s var(--ease-out), filter 0.12s var(--ease-out);
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
 
   .event-block:hover {
-    filter: brightness(1.12);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    filter: brightness(1.15);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    transform: scale(1.01);
+    z-index: 5;
   }
 
   .event-time {
     font-family: var(--font-mono);
-    font-size: 9px;
-    font-weight: 500;
-    color: var(--accent-blue);
+    font-size: 10px;
+    font-weight: 600;
     display: block;
-    opacity: 0.8;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
+    line-height: 1.4;
+    opacity: 0.85;
   }
 
   .event-title {
     font-size: 12px;
     font-weight: 600;
-    color: var(--text-primary);
-    display: block;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    margin-top: 1px;
-    line-height: 1.3;
+    line-height: 1.35;
   }
 
   .error-banner {
