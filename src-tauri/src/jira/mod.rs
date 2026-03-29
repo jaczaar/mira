@@ -48,10 +48,48 @@ impl From<JiraError> for JiraCommandError {
     }
 }
 
-fn get_client() -> Result<JiraClient, JiraCommandError> {
+async fn refresh_jira_token() -> Result<String, JiraError> {
+    let config = get_config().map_err(|e| JiraError::ConfigError(e.to_string()))?;
+    let refresh_token = crate::config::get_jira_refresh_token()
+        .map_err(|e| JiraError::ConfigError(e.to_string()))?
+        .ok_or_else(|| JiraError::AuthError("No refresh token available — please re-authenticate".to_string()))?;
+    let client_id = config.jira_client_id.as_deref()
+        .ok_or_else(|| JiraError::AuthError("No client ID stored — please re-authenticate".to_string()))?;
+    let client_secret = config.jira_client_secret.as_deref()
+        .ok_or_else(|| JiraError::AuthError("No client secret stored — please re-authenticate".to_string()))?;
+
+    let http = reqwest::Client::new();
+    let resp = http
+        .post("https://auth.atlassian.com/oauth/token")
+        .json(&serde_json::json!({
+            "grant_type": "refresh_token",
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "refresh_token": refresh_token,
+        }))
+        .send()
+        .await
+        .map_err(|e| JiraError::RequestError(e.to_string()))?;
+
+    if !resp.status().is_success() {
+        let body = resp.text().await.unwrap_or_default();
+        return Err(JiraError::AuthError(format!("Token refresh failed: {}", body)));
+    }
+
+    let token_resp: AtlassianTokenResponse = resp.json().await
+        .map_err(|e| JiraError::ParseError(e.to_string()))?;
+
+    crate::config::save_jira_token(token_resp.access_token.clone())
+        .map_err(|e| JiraError::ConfigError(e.to_string()))?;
+    if let Some(new_refresh) = &token_resp.refresh_token {
+        let _ = crate::config::save_jira_refresh_token(new_refresh);
+    }
+
+    Ok(token_resp.access_token)
+}
+
+fn build_client(token: &str) -> Result<(JiraClient, String), JiraCommandError> {
     let config = get_config()?;
-    let token = get_jira_token()?
-        .ok_or_else(|| JiraError::ConfigError("No Jira token found. Please configure your Jira PAT.".to_string()))?;
 
     if config.jira_url.is_empty() {
         return Err(JiraError::ConfigError("Jira URL not configured".to_string()).into());
@@ -60,13 +98,63 @@ fn get_client() -> Result<JiraClient, JiraCommandError> {
         return Err(JiraError::ConfigError("Jira email not configured".to_string()).into());
     }
 
-    let client = JiraClient::new(&config.jira_url, &config.jira_email, &token)?;
+    // OAuth tokens must use the Atlassian API gateway, not the direct site URL
+    let base_url = if let Some(cloud_id) = &config.jira_cloud_id {
+        if token.starts_with("ey") {
+            format!("https://api.atlassian.com/ex/jira/{}", cloud_id)
+        } else {
+            config.jira_url.clone()
+        }
+    } else {
+        config.jira_url.clone()
+    };
+
+    let client = JiraClient::new(&base_url, &config.jira_email, token)?;
+    Ok((client, base_url))
+}
+
+fn get_client() -> Result<JiraClient, JiraCommandError> {
+    let token = get_jira_token()?
+        .ok_or_else(|| JiraError::ConfigError("No Jira token found. Please configure your Jira PAT.".to_string()))?;
+    let (client, _) = build_client(&token)?;
     Ok(client)
+}
+
+async fn get_client_with_refresh() -> Result<JiraClient, JiraCommandError> {
+    let token = get_jira_token()?
+        .ok_or_else(|| JiraError::ConfigError("No Jira token found. Please configure your Jira PAT.".to_string()))?;
+
+    // If it's an OAuth token, try a test request and refresh if 401
+    if token.starts_with("ey") {
+        let (client, base_url) = build_client(&token)?;
+
+        // Quick test request
+        let test = reqwest::Client::new()
+            .get(format!("{}/rest/api/3/myself", base_url))
+            .header("Authorization", format!("Bearer {}", token))
+            .header("Accept", "application/json")
+            .send()
+            .await;
+
+        if let Ok(resp) = test {
+            if resp.status() == 401 {
+                // Token expired — refresh
+                let new_token = refresh_jira_token().await?;
+                let (client, _) = build_client(&new_token)?;
+                return Ok(client);
+            }
+        }
+
+        Ok(client)
+    } else {
+        let (client, _) = build_client(&token)?;
+        Ok(client)
+    }
 }
 
 #[tauri::command]
 pub async fn get_assigned_issues(custom_jql: Option<String>) -> Result<Vec<SimpleIssue>, JiraCommandError> {
-    let client = get_client()?;
+    let client = get_client_with_refresh().await?;
     let response = client.get_assigned_issues(custom_jql.as_deref()).await?;
 
     let issues: Vec<SimpleIssue> = response.issues.into_iter().map(SimpleIssue::from).collect();
@@ -75,7 +163,7 @@ pub async fn get_assigned_issues(custom_jql: Option<String>) -> Result<Vec<Simpl
 
 #[tauri::command]
 pub async fn search_issues(jql: String, max_results: Option<i32>) -> Result<Vec<SimpleIssue>, JiraCommandError> {
-    let client = get_client()?;
+    let client = get_client_with_refresh().await?;
     let response = client.search_issues(&jql, max_results.unwrap_or(50)).await?;
 
     let issues: Vec<SimpleIssue> = response.issues.into_iter().map(SimpleIssue::from).collect();
@@ -89,7 +177,7 @@ pub async fn create_worklog(
     started: String,
     comment: Option<String>,
 ) -> Result<(), JiraCommandError> {
-    let client = get_client()?;
+    let client = get_client_with_refresh().await?;
 
     let started_dt: DateTime<Utc> = started
         .parse()
@@ -103,14 +191,14 @@ pub async fn create_worklog(
 
 #[tauri::command]
 pub async fn test_jira_connection() -> Result<String, JiraCommandError> {
-    let client = get_client()?;
+    let client = get_client_with_refresh().await?;
     let display_name = client.test_connection().await?;
     Ok(display_name)
 }
 
 #[tauri::command]
 pub async fn get_issue_status(issue_key: String) -> Result<SimpleIssue, JiraCommandError> {
-    let client = get_client()?;
+    let client = get_client_with_refresh().await?;
     let jql = format!("key = {}", issue_key);
     let response = client.search_issues(&jql, 1).await?;
 
@@ -351,14 +439,18 @@ async fn handle_jira_callback(
         .email_address
         .unwrap_or_else(|| "unknown@email.com".to_string());
 
-    // Save the OAuth token as the Jira token (Bearer token works with Jira Cloud API)
+    // Save tokens
     crate::config::save_jira_token(token.access_token)?;
+    if let Some(refresh) = &token.refresh_token {
+        crate::config::save_jira_refresh_token(refresh)?;
+    }
 
-    // OAuth tokens must go through the Atlassian API gateway, not the direct site URL
-    let api_url = format!("https://api.atlassian.com/ex/jira/{}", resource.id);
     let site_url = resource.url.trim_end_matches('/').to_string();
     let mut config = get_config()?;
-    config.jira_url = api_url;
+    config.jira_url = site_url.clone();
+    config.jira_cloud_id = Some(resource.id.clone());
+    config.jira_client_id = Some(client_id.clone());
+    config.jira_client_secret = Some(client_secret.clone());
     config.jira_email = email.clone();
     crate::config::save_config(config)?;
 

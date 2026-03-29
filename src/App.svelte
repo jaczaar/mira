@@ -55,7 +55,6 @@
       <About />
     {/if}
   </div>
-
   <Header {currentRoute} onNavigate={navigate} />
 </main>
 
@@ -248,7 +247,7 @@
 
   .content {
     flex: 1;
-    padding: 16px 3% 60px;
+    padding: 16px 3% 16px;
     width: 100%;
     overflow-y: auto;
     animation: fadeInUp 0.4s var(--ease-out);

@@ -8,6 +8,7 @@ const SERVICE_NAME: &str = "com.mira.app";
 const JIRA_TOKEN_KEY: &str = "jira-pat";
 const TOKEN_FILE_NAME: &str = ".token";
 const GITHUB_TOKEN_FILE_NAME: &str = ".github_token";
+const JIRA_REFRESH_TOKEN_FILE_NAME: &str = ".jira_refresh_token";
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
@@ -35,6 +36,9 @@ impl serde::Serialize for ConfigError {
 pub struct AppConfig {
     pub jira_url: String,
     pub jira_email: String,
+    pub jira_cloud_id: Option<String>,
+    pub jira_client_id: Option<String>,
+    pub jira_client_secret: Option<String>,
     pub google_client_id: String,
     pub google_client_secret: String,
     pub selected_calendar: Option<String>,
@@ -48,6 +52,8 @@ pub struct AppConfig {
     pub github_username: String,
     pub pr_event_title_template: String,
     pub pr_default_event_color: Option<String>,
+    // Per-calendar color index (calendar UID -> index into EVENT_COLORS)
+    pub calendar_colors: std::collections::HashMap<String, u8>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -231,6 +237,29 @@ pub fn has_jira_token() -> Result<bool, ConfigError> {
         Some(_) => Ok(true),
         None => Ok(false),
     }
+}
+
+// Jira refresh token management
+
+pub fn save_jira_refresh_token(token: &str) -> Result<(), ConfigError> {
+    let path = get_config_dir()?.join(JIRA_REFRESH_TOKEN_FILE_NAME);
+    fs::write(&path, token).map_err(|e| ConfigError::WriteError(e.to_string()))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+    }
+    Ok(())
+}
+
+pub fn get_jira_refresh_token() -> Result<Option<String>, ConfigError> {
+    let path = get_config_dir()?.join(JIRA_REFRESH_TOKEN_FILE_NAME);
+    if !path.exists() {
+        return Ok(None);
+    }
+    let token = fs::read_to_string(&path).map_err(|e| ConfigError::ReadError(e.to_string()))?;
+    let token = token.trim();
+    if token.is_empty() { Ok(None) } else { Ok(Some(token.to_string())) }
 }
 
 // GitHub token management functions
