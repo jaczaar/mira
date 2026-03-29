@@ -46,8 +46,20 @@ pub fn spawn_claude(
 ) -> Result<tokio::process::Child, ClaudeError> {
     let mut cmd = Command::new("claude");
     cmd.arg("--print")
+        .arg("--verbose")
         .arg("--output-format")
         .arg("stream-json")
+        .arg("--allowedTools")
+        .arg("Edit Read Write Glob Grep Bash")
+        .arg("--system-prompt")
+        .arg(
+            "You are an assistant embedded in Mira, a Motion-like auto-scheduling desktop app \
+             built with Tauri v2, Svelte 5 (runes), and Rust. Mira syncs Jira tasks and GitHub PRs \
+             with Google Calendar, auto-scheduling them into free slots. The frontend is in src/ \
+             (TypeScript/Svelte), the backend is in src-tauri/src/ (Rust with Tauri commands). \
+             Key integrations: Google Calendar OAuth, Jira OAuth, GitHub device flow. \
+             Help the user with bug fixes, features, and questions about this codebase."
+        )
         .arg("--session-id")
         .arg(session_id);
 
@@ -109,6 +121,10 @@ pub async fn stream_output(
         let reader = BufReader::new(stderr);
         let mut lines = reader.lines();
         while let Ok(Some(line)) = lines.next_line().await {
+            // Skip noisy warnings that aren't real errors
+            if line.contains("blocked by enterprise policy") || line.contains("Warning: claude.ai") {
+                continue;
+            }
             let _ = app_err.emit(
                 "chat-stream",
                 ChatStreamEvent {

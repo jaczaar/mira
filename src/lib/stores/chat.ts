@@ -120,11 +120,10 @@ export async function startSession(repoPath: string): Promise<void> {
           const lastMsg = s.messages[s.messages.length - 1];
           if (lastMsg && lastMsg.role === "assistant" && lastMsg.isStreaming) {
             // Try to parse stream-json format
-            let text = data;
+            let text = "";
             try {
               const parsed = JSON.parse(data);
               if (parsed.type === "assistant" && parsed.message?.content) {
-                // Extract text from content blocks
                 const blocks = parsed.message.content;
                 text = blocks
                   .filter((b: { type: string }) => b.type === "text")
@@ -132,15 +131,11 @@ export async function startSession(repoPath: string): Promise<void> {
                   .join("");
               } else if (parsed.type === "content_block_delta") {
                 text = parsed.delta?.text || "";
-              } else if (parsed.type === "result") {
-                text = parsed.result || "";
-              } else if (typeof parsed.content === "string") {
-                text = parsed.content;
-              } else {
-                text = "";
               }
+              // All other JSON event types (result, message_start, etc.) are ignored
             } catch {
-              // Not JSON, use as-is
+              // Not JSON — use raw text as-is
+              text = data;
             }
             if (text) {
               lastMsg.content += text;

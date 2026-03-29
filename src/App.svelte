@@ -2,13 +2,13 @@
   import { onMount } from "svelte";
   import { listen } from "@tauri-apps/api/event";
   import Header from "./lib/components/Header.svelte";
-  import ChatWidget from "./lib/components/ChatWidget.svelte";
   import Dashboard from "./routes/Dashboard.svelte";
   import Calendar from "./routes/Calendar.svelte";
   import About from "./routes/About.svelte";
+  import EditMode from "./routes/EditMode.svelte";
   import "./lib/stores/theme";
 
-  type Route = "dashboard" | "calendar" | "about" | "chat";
+  type Route = "dashboard" | "calendar" | "about" | "edit";
   let currentRoute = $state<Route>("calendar");
 
   function navigate(route: Route) {
@@ -25,7 +25,7 @@
         navigate("dashboard");
       } else if (e.key === "3") {
         e.preventDefault();
-        navigate("chat");
+        navigate("edit");
       }
     }
   }
@@ -49,10 +49,10 @@
       <Dashboard />
     {:else if currentRoute === "calendar"}
       <Calendar />
-    {:else if currentRoute === "chat"}
-      <ChatWidget repoPath="." embedded />
     {:else if currentRoute === "about"}
       <About />
+    {:else if currentRoute === "edit"}
+      <EditMode />
     {/if}
   </div>
   <Header {currentRoute} onNavigate={navigate} />

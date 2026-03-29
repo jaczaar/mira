@@ -273,11 +273,6 @@
     $calendarEvents.some(e => isAllDay(e))
   );
 
-  function formatEventTime(event: CalendarEvent): string {
-    const start = new Date(event.start_date);
-    return start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-  }
-
   function navigateWeek(direction: number) {
     const d = new Date(currentDate);
     d.setDate(d.getDate() + direction * 7);
@@ -702,7 +697,7 @@
   .filter-menu {
     position: absolute;
     top: 36px;
-    left: 0;
+    right: 0;
     display: flex;
     flex-direction: column;
     min-width: 220px;

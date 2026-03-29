@@ -15,7 +15,6 @@
     discardAllChanges,
     submitPR,
   } from "../stores/chat";
-  import { hasGitHubToken } from "../api";
   import DiffViewer from "./DiffViewer.svelte";
   import PRSubmitForm from "./PRSubmitForm.svelte";
 
@@ -28,16 +27,16 @@
 
   let inputText = $state("");
   let messagesEl: HTMLDivElement | undefined = $state();
-  let hasGhToken = $state(false);
   let showPRForm = $state(false);
 
   onMount(async () => {
     if (embedded && !$claudeCheckDone) {
       await checkClaude();
-      hasGhToken = await hasGitHubToken();
       if ($claudeInstalled && !$chatSession) {
         await startSession(repoPath);
       }
+    } else if (embedded && $claudeInstalled && !$chatSession) {
+      await startSession(repoPath);
     }
   });
 
@@ -71,11 +70,6 @@
 <div class="chat-page">
   <div class="chat-header">
     <div class="chat-title">
-      <div class="chat-icon">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-      </div>
       <span>Claude Code</span>
       {#if $chatLoading}
         <span class="streaming-indicator"></span>
@@ -94,40 +88,18 @@
 
     <div class="chat-body" bind:this={messagesEl}>
       {#if !$claudeCheckDone}
-        <div class="status-msg">Checking Claude Code CLI...</div>
+        <div class="status-msg">Checking CLI...</div>
       {:else if !$claudeInstalled}
         <div class="onboarding">
-          <p><strong>Claude Code CLI not found</strong></p>
-          <p>Install it to use the chat feature:</p>
+          <p>Claude Code CLI required:</p>
           <code>npm install -g @anthropic-ai/claude-code</code>
-          <p>Then reload the app.</p>
           <button class="btn-inline" onclick={() => { claudeCheckDone.set(false); checkClaude(); }}>
             Retry
           </button>
         </div>
-      {:else if !hasGhToken}
-        <div class="onboarding">
-          <p><strong>GitHub token not configured</strong></p>
-          <p>Add a GitHub PAT in Settings to enable PR creation for community contributions.</p>
-          <p>You can still use the chat without it.</p>
-          <button class="btn-inline" onclick={async () => { hasGhToken = await hasGitHubToken(); if (!$chatSession) await startSession(repoPath); }}>
-            Continue anyway
-          </button>
-        </div>
       {:else if !$chatSession}
-        <div class="status-msg">Starting session...</div>
+        <div class="status-msg">Starting...</div>
       {:else}
-        {#if $chatSession.messages.length === 0}
-          <div class="welcome">
-            <div class="welcome-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-            </div>
-            <p><strong>Ask Claude to make changes to Mira</strong></p>
-            <p class="sub">Describe a feature, bug fix, or improvement. Claude will edit files in this repo.</p>
-          </div>
-        {/if}
 
         {#each $chatSession.messages as msg (msg.id)}
           <div class="message {msg.role}">
@@ -201,8 +173,7 @@
 
 <style>
   .chat-page {
-    max-width: 720px;
-    margin: 0 auto;
+    width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -214,7 +185,6 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px 14px;
-    background: var(--bg-elevated);
     border-bottom: 1px solid var(--border-subtle);
   }
 
@@ -225,17 +195,6 @@
     font-size: 13px;
     font-weight: 600;
     color: var(--text-primary);
-  }
-
-  .chat-icon {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    background: var(--gradient-brand);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
   }
 
   .streaming-indicator {
@@ -329,34 +288,9 @@
 
   .welcome {
     padding: 16px;
-    background: var(--bg-elevated);
-    border-radius: var(--radius-md);
     font-size: 13px;
-    line-height: 1.5;
     text-align: center;
-    border: 1px solid var(--border-subtle);
-    color: var(--text-secondary);
-  }
-
-  .welcome strong {
-    color: var(--text-primary);
-  }
-
-  .welcome .sub {
     color: var(--text-tertiary);
-    font-size: 12px;
-  }
-
-  .welcome-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: var(--gradient-brand);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    margin-bottom: 8px;
   }
 
   .message {

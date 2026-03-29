@@ -3,6 +3,7 @@ pub mod config;
 pub mod github;
 pub mod google;
 pub mod jira;
+pub mod workspace;
 
 use claude::{
     cancel_chat_message, check_claude_installed, discard_changes, get_changes_diff,
@@ -20,6 +21,11 @@ use google::{
 };
 use tauri::menu::{MenuBuilder, SubmenuBuilder};
 use tauri::Emitter;
+use workspace::{
+    workspace_check_status, workspace_setup_node, workspace_clone_repo,
+    workspace_npm_install, workspace_start_vite, workspace_stop_vite,
+    workspace_get_path, workspace_pull_latest, WorkspaceState,
+};
 use jira::{
     create_worklog, get_assigned_issues, get_issue_status, search_issues, test_jira_connection,
     jira_auth_start, jira_auth_wait, JiraAuthState,
@@ -66,6 +72,7 @@ pub fn run() {
         .manage(AuthState::default())
         .manage(JiraAuthState::default())
         .manage(ChatState::default())
+        .manage(WorkspaceState::default())
         .invoke_handler(tauri::generate_handler![
             // Config commands
             get_config,
@@ -101,6 +108,15 @@ pub fn run() {
             google_create_event,
             google_update_event,
             google_delete_event,
+            // Workspace commands
+            workspace_check_status,
+            workspace_setup_node,
+            workspace_clone_repo,
+            workspace_npm_install,
+            workspace_start_vite,
+            workspace_stop_vite,
+            workspace_get_path,
+            workspace_pull_latest,
             // Claude chat commands
             check_claude_installed,
             start_chat_session,

@@ -364,3 +364,52 @@ export async function submitPR(
 export async function discardChanges(sessionId: string): Promise<void> {
   return invoke("discard_changes", { sessionId });
 }
+
+// Workspace types
+export interface WorkspaceStatus {
+  claude_available: boolean;
+  node_installed: boolean;
+  node_path: string | null;
+  repo_cloned: boolean;
+  npm_installed: boolean;
+  workspace_path: string;
+}
+
+export interface WorkspaceProgressEvent {
+  step: string;
+  message: string;
+  percent: number;
+}
+
+// Workspace commands
+export async function workspaceCheckStatus(): Promise<WorkspaceStatus> {
+  return invoke<WorkspaceStatus>("workspace_check_status");
+}
+
+export async function workspaceSetupNode(): Promise<void> {
+  return invoke("workspace_setup_node");
+}
+
+export async function workspaceCloneRepo(): Promise<void> {
+  return invoke("workspace_clone_repo");
+}
+
+export async function workspaceNpmInstall(): Promise<void> {
+  return invoke("workspace_npm_install");
+}
+
+export async function workspaceStartVite(): Promise<number> {
+  return invoke<number>("workspace_start_vite");
+}
+
+export async function workspaceStopVite(): Promise<void> {
+  return invoke("workspace_stop_vite");
+}
+
+export async function workspaceGetPath(): Promise<string> {
+  return invoke<string>("workspace_get_path");
+}
+
+export async function workspacePullLatest(): Promise<void> {
+  return invoke("workspace_pull_latest");
+}
