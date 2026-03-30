@@ -4,11 +4,10 @@
   interface Props {
     task: SyncedTask;
     onSync?: (task: SyncedTask) => void;
-    onLogTime?: (task: SyncedTask) => void;
     compact?: boolean;
   }
 
-  let { task, onSync, onLogTime, compact = false }: Props = $props();
+  let { task, onSync, compact = false }: Props = $props();
 
   function formatDuration(seconds: number | null): string {
     if (!seconds) return "-";
@@ -133,11 +132,6 @@
     {#if onSync}
       <button class="act-btn primary" onclick={() => onSync(task)}>
         {task.calendar_event_uid ? "Re-sync" : "Schedule"}
-      </button>
-    {/if}
-    {#if onLogTime && !compact}
-      <button class="act-btn success" onclick={() => onLogTime(task)}>
-        Log Time
       </button>
     {/if}
     <a href={task.url} target="_blank" rel="noopener" class="act-btn ghost">
@@ -350,16 +344,6 @@
   .act-btn.primary:hover {
     background: rgba(91, 141, 239, 0.2);
     box-shadow: 0 0 12px var(--accent-blue-dim);
-  }
-
-  .act-btn.success {
-    background: var(--accent-green-dim);
-    border-color: rgba(74, 222, 128, 0.15);
-    color: var(--accent-green);
-  }
-
-  .act-btn.success:hover {
-    background: rgba(74, 222, 128, 0.18);
   }
 
   .act-btn.ghost {

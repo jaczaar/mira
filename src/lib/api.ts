@@ -18,6 +18,16 @@ export interface AppConfig {
   pr_event_title_template: string;
   pr_default_event_color: string | null;
   calendar_colors: Record<string, number>;
+  account_colors: Record<string, number>;
+  scheduling_strategy: "earliest_available" | "priority_weighted";
+  allow_task_splitting: boolean;
+  account_schedule_windows: Record<string, ScheduleWindow>;
+}
+
+export interface ScheduleWindow {
+  start_hour: number;
+  end_hour: number;
+  days: number[]; // 0=Sun, 1=Mon, ..., 6=Sat; empty = weekdays
 }
 
 // Jira types

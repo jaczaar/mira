@@ -1,5 +1,6 @@
 import { writable } from "svelte/store";
 import * as api from "../api";
+import type { ScheduleWindow } from "../api";
 
 export interface AppConfig {
   jira_url: string;
@@ -18,6 +19,10 @@ export interface AppConfig {
   pr_event_title_template: string;
   pr_default_event_color: string | null;
   calendar_colors: Record<string, number>;
+  account_colors: Record<string, number>;
+  scheduling_strategy: "earliest_available" | "priority_weighted";
+  allow_task_splitting: boolean;
+  account_schedule_windows: Record<string, ScheduleWindow>;
 }
 
 const defaultConfig: AppConfig = {
@@ -36,6 +41,10 @@ const defaultConfig: AppConfig = {
   pr_event_title_template: "[PR Review] {repo}: {title}",
   pr_default_event_color: null,
   calendar_colors: {},
+  account_colors: {},
+  scheduling_strategy: "earliest_available",
+  allow_task_splitting: true,
+  account_schedule_windows: {},
 };
 
 export const config = writable<AppConfig>(defaultConfig);

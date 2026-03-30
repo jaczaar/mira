@@ -1,5 +1,6 @@
 import { writable, get } from "svelte/store";
 import * as api from "../api";
+import type { ScheduleWindow } from "../api";
 import { config } from "./config";
 import { getAccountForCalendar } from "./calendar";
 import { tasks, updateTaskCalendarEvent, clearTaskCalendarEvent } from "./tasks";
@@ -15,6 +16,7 @@ export interface SyncState {
   message: string | null;
   progress: number;
   total: number;
+  errors: string[];
 }
 
 export const syncState = writable<SyncState>({
@@ -23,6 +25,7 @@ export const syncState = writable<SyncState>({
   message: null,
   progress: 0,
   total: 0,
+  errors: [],
 });
 
 export interface SyncResult {
@@ -118,16 +121,18 @@ function findFreeSlots(
   date: string,
   isToday: boolean,
   now: Date,
+  workStart: number = WORK_START,
+  workEnd: number = WORK_END,
 ): FreeSlot[] {
   const slots: FreeSlot[] = [];
 
-  let currentMinute = WORK_START * 60;
+  let currentMinute = workStart * 60;
   if (isToday) {
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
     currentMinute = Math.max(currentMinute, Math.ceil(nowMinutes / 30) * 30);
   }
 
-  const endMinute = WORK_END * 60;
+  const endMinute = workEnd * 60;
 
   for (const busy of busyPeriods) {
     if (busy.start > currentMinute && busy.start <= endMinute) {
@@ -159,10 +164,28 @@ function findFreeSlots(
   return slots;
 }
 
+const DEFAULT_WEEKDAYS = [1, 2, 3, 4, 5]; // Mon-Fri
+
+function getScheduleWindow(
+  accountEmail: string,
+  windows: Record<string, ScheduleWindow>,
+): { startHour: number; endHour: number; days: number[] } {
+  const window = windows[accountEmail];
+  if (window) {
+    return {
+      startHour: window.start_hour,
+      endHour: window.end_hour,
+      days: window.days.length > 0 ? window.days : DEFAULT_WEEKDAYS,
+    };
+  }
+  return { startHour: WORK_START, endHour: WORK_END, days: DEFAULT_WEEKDAYS };
+}
+
 async function getFreeSlotsByDay(
   accountEmail: string,
   calendarName: string,
   days: number,
+  scheduleWindows: Record<string, ScheduleWindow>,
 ): Promise<FreeSlot[]> {
   const now = new Date();
   const today = format(now, "yyyy-MM-dd");
@@ -175,17 +198,18 @@ async function getFreeSlotsByDay(
     endDate,
   );
 
+  const { startHour, endHour, days: allowedDays } = getScheduleWindow(accountEmail, scheduleWindows);
+
   const allSlots: FreeSlot[] = [];
 
   for (let d = 0; d < days; d++) {
     const date = format(addDays(now, d), "yyyy-MM-dd");
     const dayOfWeek = addDays(now, d).getDay();
 
-    // Skip weekends
-    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+    if (!allowedDays.includes(dayOfWeek)) continue;
 
     const busyPeriods = buildBusyPeriods(events, date);
-    const daySlots = findFreeSlots(busyPeriods, date, d === 0, now);
+    const daySlots = findFreeSlots(busyPeriods, date, d === 0, now, startHour, endHour);
     allSlots.push(...daySlots);
   }
 
@@ -195,8 +219,37 @@ async function getFreeSlotsByDay(
 function allocateTaskToSlots(
   taskDuration: number,
   freeSlots: FreeSlot[],
+  allowSplitting: boolean = true,
 ): { date: string; startMinute: number; endMinute: number }[] {
   const allocations: { date: string; startMinute: number; endMinute: number }[] = [];
+
+  if (!allowSplitting) {
+    // Find the first slot that can fit the entire task
+    for (let i = 0; i < freeSlots.length; i++) {
+      const slot = freeSlots[i];
+      if (slot.durationMinutes >= taskDuration) {
+        allocations.push({
+          date: slot.date,
+          startMinute: slot.startMinute,
+          endMinute: slot.startMinute + taskDuration,
+        });
+
+        freeSlots[i] = {
+          ...slot,
+          startMinute: slot.startMinute + taskDuration + BUFFER_MINUTES,
+          durationMinutes: slot.durationMinutes - taskDuration - BUFFER_MINUTES,
+        };
+        if (freeSlots[i].durationMinutes < MIN_SLOT_MINUTES) {
+          freeSlots.splice(i, 1);
+        }
+        return allocations;
+      }
+    }
+    // No single slot big enough — skip this task
+    return allocations;
+  }
+
+  // Splitting allowed: fill across multiple slots
   let remaining = taskDuration;
 
   for (let i = 0; i < freeSlots.length && remaining > 0; i++) {
@@ -210,14 +263,12 @@ function allocateTaskToSlots(
         endMinute: slot.startMinute + allocatable,
       });
 
-      // Shrink the slot for future tasks
       freeSlots[i] = {
         ...slot,
         startMinute: slot.startMinute + allocatable + BUFFER_MINUTES,
         durationMinutes: slot.durationMinutes - allocatable - BUFFER_MINUTES,
       };
 
-      // Remove slot if too small
       if (freeSlots[i].durationMinutes < MIN_SLOT_MINUTES) {
         freeSlots.splice(i, 1);
         i--;
@@ -227,7 +278,6 @@ function allocateTaskToSlots(
     }
   }
 
-  // If we couldn't fit everything but have some, return what we got
   // If we couldn't fit anything, force into the first available slot
   if (allocations.length === 0 && freeSlots.length > 0) {
     const slot = freeSlots[0];
@@ -265,14 +315,25 @@ export async function syncTasksToCalendar(): Promise<SyncResult> {
     errors: [],
   };
 
-  // Sort tasks: already-synced tasks skip scheduling, then by priority, then by due date
+  const strategy = currentConfig.scheduling_strategy;
+
+  // Sort tasks based on strategy
   const activeTasks = currentTasks
     .filter((t) => t.status_category !== "done" && !t.calendar_event_uid)
     .sort((a, b) => {
-      // Priority first
+      if (strategy === "earliest_available") {
+        // Due date first (earliest first, no due date last), then priority
+        if (a.due_date && b.due_date) {
+          const dateDiff = a.due_date.localeCompare(b.due_date);
+          if (dateDiff !== 0) return dateDiff;
+        }
+        if (a.due_date && !b.due_date) return -1;
+        if (!a.due_date && b.due_date) return 1;
+        return priorityScore(a.priority) - priorityScore(b.priority);
+      }
+      // priority_weighted: Priority first, then due date
       const pDiff = priorityScore(a.priority) - priorityScore(b.priority);
       if (pDiff !== 0) return pDiff;
-      // Then by due date (earlier first, no due date last)
       if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
       if (a.due_date) return -1;
       if (b.due_date) return 1;
@@ -288,6 +349,7 @@ export async function syncTasksToCalendar(): Promise<SyncResult> {
       message: "All tasks are already synced or completed.",
       progress: 0,
       total: 0,
+      errors: [],
     });
     return result;
   }
@@ -298,16 +360,18 @@ export async function syncTasksToCalendar(): Promise<SyncResult> {
     message: "Analyzing calendar availability...",
     progress: 0,
     total,
+    errors: [],
   });
 
   const accountEmail =
     getAccountForCalendar(currentConfig.selected_calendar) ?? "";
 
-  // Fetch free slots across the next 2 weeks
+  // Fetch free slots across the next 2 weeks, using per-account schedule windows
   const freeSlots = await getFreeSlotsByDay(
     accountEmail,
     currentConfig.selected_calendar,
     SCHEDULE_DAYS,
+    currentConfig.account_schedule_windows ?? {},
   );
 
   // Schedule each task into available slots
@@ -321,7 +385,11 @@ export async function syncTasksToCalendar(): Promise<SyncResult> {
       progress: i + 1,
     }));
 
-    const allocations = allocateTaskToSlots(taskDuration, freeSlots);
+    const allocations = allocateTaskToSlots(
+      taskDuration,
+      freeSlots,
+      currentConfig.allow_task_splitting ?? true,
+    );
 
     if (allocations.length === 0) {
       result.errors.push(
@@ -402,6 +470,7 @@ export async function syncTasksToCalendar(): Promise<SyncResult> {
     message,
     progress: total,
     total,
+    errors: result.errors,
   });
 
   return result;
@@ -430,6 +499,7 @@ export async function syncCalendarToWorklogs(
     message: "Fetching calendar events...",
     progress: 0,
     total: 0,
+    errors: [],
   });
 
   try {
@@ -508,6 +578,7 @@ export async function syncCalendarToWorklogs(
     message,
     progress: result.created,
     total: result.created,
+    errors: result.errors,
   });
 
   return result;
@@ -520,5 +591,6 @@ export function resetSyncState(): void {
     message: null,
     progress: 0,
     total: 0,
+    errors: [],
   });
 }

@@ -27,12 +27,6 @@
     loadGoogleAuthStatus,
   } from "../stores/google";
   import { googleAuthStart, googleAuthWait, googleAuthSignOut } from "../api";
-  import {
-    saveGitHubToken as saveGitHubTokenStore,
-    deleteGitHubToken as deleteGitHubTokenStore,
-    testGitHubConnection,
-  } from "../stores/github";
-  import * as api from "../api";
 
   let jiraUrl = $state("");
   let jiraEmail = $state("");
@@ -55,16 +49,6 @@
   >("idle");
   let googleConnectionMessage = $state("");
 
-  let githubToken = $state("");
-  let githubUsername = $state("");
-  let prEventTitleTemplate = $state("[PR Review] {repo}: {title}");
-  let prDefaultEventColor = $state<string | null>(null);
-  let showGitHubToken = $state(false);
-  let githubConnectionStatus = $state<"idle" | "testing" | "success" | "error">(
-    "idle",
-  );
-  let githubConnectionMessage = $state("");
-  let hasGitHubTokenLocal = $state(false);
 
   let currentVersion = $state("");
   let updateStatus = $state<"idle" | "checking" | "available" | "downloading" | "up-to-date" | "error">("idle");
@@ -99,11 +83,6 @@
     currentVersion = await getVersion();
     await loadConfig();
     await loadGoogleAuthStatus();
-    try {
-      hasGitHubTokenLocal = await api.hasGitHubToken();
-    } catch {
-      hasGitHubTokenLocal = false;
-    }
     if ($googleAccount) {
       googleConnectionStatus = "connected";
       googleConnectionMessage = `Connected as ${$googleAccount.email}`;
@@ -120,10 +99,6 @@
     jqlFilter = $config.jql_filter || "";
     eventTitleTemplate = $config.event_title_template;
     defaultEventColor = $config.default_event_color;
-    githubUsername = $config.github_username || "";
-    prEventTitleTemplate =
-      $config.pr_event_title_template || "[PR Review] {repo}: {title}";
-    prDefaultEventColor = $config.pr_default_event_color;
   });
 
   async function handleSaveConfig() {
@@ -139,10 +114,14 @@
       event_title_template: eventTitleTemplate,
       timezone: $config.timezone,
       default_event_color: defaultEventColor,
-      github_username: githubUsername,
-      pr_event_title_template: prEventTitleTemplate,
-      pr_default_event_color: prDefaultEventColor,
+      github_username: $config.github_username ?? "",
+      pr_event_title_template: $config.pr_event_title_template ?? "[PR Review] {repo}: {title}",
+      pr_default_event_color: $config.pr_default_event_color ?? null,
       calendar_colors: $config.calendar_colors ?? {},
+      account_colors: $config.account_colors ?? {},
+      scheduling_strategy: $config.scheduling_strategy ?? "earliest_available",
+      allow_task_splitting: $config.allow_task_splitting ?? true,
+      account_schedule_windows: $config.account_schedule_windows ?? {},
     });
   }
 
@@ -235,55 +214,6 @@
       .replace("{type}", "Task");
   }
 
-  function previewPRTitle(): string {
-    return prEventTitleTemplate
-      .replace("{repo}", "my-repo")
-      .replace("{title}", "Fix important bug")
-      .replace("{number}", "42")
-      .replace("{author}", "developer");
-  }
-
-  async function handleSaveGitHubToken() {
-    if (githubToken) {
-      try {
-        await saveGitHubTokenStore(githubToken);
-        githubToken = "";
-        hasGitHubTokenLocal = true;
-        githubConnectionMessage = "Token saved successfully";
-        githubConnectionStatus = "success";
-      } catch (error) {
-        githubConnectionStatus = "error";
-        githubConnectionMessage = `Failed to save token: ${error instanceof Error ? error.message : String(error)}`;
-      }
-    }
-  }
-
-  async function handleDeleteGitHubToken() {
-    try {
-      await deleteGitHubTokenStore();
-      hasGitHubTokenLocal = false;
-      githubConnectionStatus = "idle";
-      githubConnectionMessage = "";
-    } catch (error) {
-      githubConnectionStatus = "error";
-      githubConnectionMessage = `Failed to delete token: ${error instanceof Error ? error.message : String(error)}`;
-    }
-  }
-
-  async function handleTestGitHubConnection() {
-    githubConnectionStatus = "testing";
-    githubConnectionMessage = "";
-
-    try {
-      const displayName = await testGitHubConnection();
-      githubConnectionStatus = "success";
-      githubConnectionMessage = `Connected as ${displayName}`;
-    } catch (error) {
-      githubConnectionStatus = "error";
-      githubConnectionMessage =
-        error instanceof Error ? error.message : "Connection failed";
-    }
-  }
 
   async function handleCheckForUpdate() {
     updateStatus = "checking";
@@ -323,6 +253,8 @@
       updateError = error instanceof Error ? error.message : String(error);
     }
   }
+
+
 </script>
 
 <div class="settings">
@@ -583,132 +515,6 @@
     {/if}
   </section>
 
-  <section>
-    <div class="section-header">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-      </svg>
-      <h2>GitHub</h2>
-    </div>
-
-    <div class="form-group">
-      <label for="github-token">Personal Access Token</label>
-      <div class="token-input">
-        <input
-          id="github-token"
-          type={showGitHubToken ? "text" : "password"}
-          bind:value={githubToken}
-          placeholder={hasGitHubTokenLocal
-            ? "Token saved securely"
-            : "Enter your GitHub PAT"}
-        />
-        <button
-          class="icon-button"
-          onclick={() => (showGitHubToken = !showGitHubToken)}
-          title={showGitHubToken ? "Hide" : "Show"}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            {#if showGitHubToken}
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-              <line x1="1" y1="1" x2="23" y2="23" />
-            {:else}
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-              <circle cx="12" cy="12" r="3" />
-            {/if}
-          </svg>
-        </button>
-      </div>
-      <p class="hint">
-        Create a PAT with <code>repo</code> scope at GitHub Settings &gt; Developer settings
-      </p>
-      <div class="button-group">
-        <button
-          class="btn primary"
-          onclick={handleSaveGitHubToken}
-          disabled={!githubToken || $configLoading}
-        >
-          Save Token
-        </button>
-        {#if hasGitHubTokenLocal}
-          <button
-            class="btn danger"
-            onclick={handleDeleteGitHubToken}
-            disabled={$configLoading}
-          >
-            Delete
-          </button>
-        {/if}
-      </div>
-    </div>
-
-    <div class="form-group">
-      <button
-        class="btn test"
-        onclick={handleTestGitHubConnection}
-        disabled={githubConnectionStatus === "testing" || !hasGitHubTokenLocal}
-      >
-        {githubConnectionStatus === "testing"
-          ? "Testing..."
-          : "Test Connection"}
-      </button>
-      {#if githubConnectionMessage}
-        <p
-          class="connection-status"
-          class:success={githubConnectionStatus === "success"}
-          class:error={githubConnectionStatus === "error"}
-        >
-          {githubConnectionMessage}
-        </p>
-      {/if}
-    </div>
-
-    <div class="form-group">
-      <label for="github-username">Username (optional)</label>
-      <input
-        id="github-username"
-        type="text"
-        bind:value={githubUsername}
-        placeholder="Auto-detected from token"
-        onchange={handleSaveConfig}
-      />
-      <p class="hint">Leave blank to auto-detect from your token</p>
-    </div>
-
-    <div class="form-group">
-      <label for="pr-title-template">PR Event Title Template</label>
-      <input
-        id="pr-title-template"
-        type="text"
-        bind:value={prEventTitleTemplate}
-        placeholder="[PR Review] repo: title"
-        onchange={handleSaveConfig}
-      />
-      <p class="hint">
-        Placeholders: &#123;repo&#125;, &#123;title&#125;,
-        &#123;number&#125;, &#123;author&#125;
-      </p>
-      <div class="preview">{previewPRTitle()}</div>
-    </div>
-
-    <div class="form-group">
-      <label for="pr-default-color">PR Event Color</label>
-      <div class="color-select">
-        <span
-          class="color-swatch"
-          style={`background: ${colorHexFor(prDefaultEventColor)}`}
-        ></span>
-        <select
-          id="pr-default-color"
-          bind:value={prDefaultEventColor}
-          onchange={handleSaveConfig}
-        >
-          {#each calendarColors as color}
-            <option value={color.id}>{color.name}</option>
-          {/each}
-        </select>
-      </div>
-    </div>
-  </section>
 
   <section>
     <div class="section-header">
@@ -898,6 +704,7 @@
   section:nth-child(4) { animation-delay: 120ms; }
   section:nth-child(5) { animation-delay: 160ms; }
   section:nth-child(6) { animation-delay: 200ms; }
+  section:nth-child(7) { animation-delay: 240ms; }
 
   .section-header {
     display: flex;
@@ -1348,4 +1155,6 @@
     border-radius: 2px;
     transition: width 0.2s;
   }
+
+
 </style>

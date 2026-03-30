@@ -66,9 +66,15 @@
     durationMinutes: number;
   }
 
-  const WORK_START = 8;
-  const WORK_END = 18;
   const MIN_SLOT_MINUTES = 30;
+
+  const accountWorkHours = $derived.by(() => {
+    const cal = $config.selected_calendar;
+    if (!cal) return { start: 8, end: 18 };
+    const email = getAccountForCalendar(cal) ?? "";
+    const win = ($config.account_schedule_windows ?? {})[email];
+    return win ? { start: win.start_hour, end: win.end_hour } : { start: 8, end: 18 };
+  });
 
   const calendarColors = [
     { id: null, name: "Default", color: "#4285f4" },
@@ -177,13 +183,13 @@
       (a, b) => a.start - b.start
     );
 
-    let currentMinute = WORK_START * 60;
+    let currentMinute = accountWorkHours.start * 60;
     if (isSelectedToday) {
       const nowMinutes = getHours(today) * 60 + getMinutes(today);
       currentMinute = Math.max(currentMinute, Math.ceil(nowMinutes / 30) * 30);
     }
 
-    const endMinute = WORK_END * 60;
+    const endMinute = accountWorkHours.end * 60;
 
     for (const busy of allBusy) {
       if (busy.start > currentMinute && busy.start <= endMinute) {

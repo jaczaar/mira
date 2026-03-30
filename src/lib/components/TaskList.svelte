@@ -5,10 +5,9 @@
 
   interface Props {
     onSyncTask?: (task: SyncedTask) => void;
-    onLogTime?: (task: SyncedTask) => void;
   }
 
-  let { onSyncTask, onLogTime }: Props = $props();
+  let { onSyncTask }: Props = $props();
 
   let filter = $state<"all" | "active" | "synced" | "done">("active");
   let viewMode = $state<"flat" | "grouped">("grouped");
@@ -250,7 +249,7 @@
     <div class="tasks-grid">
       {#each visibleTasks as task, i (task.id)}
         <div style="animation: fadeInUp 0.3s var(--ease-out) {i * 40}ms both">
-          <TaskCard {task} onSync={onSyncTask} {onLogTime} />
+          <TaskCard {task} onSync={onSyncTask} />
         </div>
       {/each}
     </div>
@@ -269,7 +268,7 @@
           </div>
           <div class="epic-tasks">
             {#each group.tasks.filter(t => !t.is_epic) as task (task.id)}
-              <TaskCard {task} onSync={onSyncTask} {onLogTime} compact={true} />
+              <TaskCard {task} onSync={onSyncTask} compact={true} />
             {/each}
           </div>
         </div>

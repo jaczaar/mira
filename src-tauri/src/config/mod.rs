@@ -54,6 +54,14 @@ pub struct AppConfig {
     pub pr_default_event_color: Option<String>,
     // Per-calendar color index (calendar UID -> index into EVENT_COLORS)
     pub calendar_colors: std::collections::HashMap<String, u8>,
+    // Per-account color index (email -> index into EVENT_COLORS)
+    pub account_colors: std::collections::HashMap<String, u8>,
+    // Scheduling options
+    pub scheduling_strategy: SchedulingStrategy,
+    #[serde(default = "default_true")]
+    pub allow_task_splitting: bool,
+    // Per-account schedule windows: account email -> ScheduleWindow
+    pub account_schedule_windows: std::collections::HashMap<String, ScheduleWindow>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -63,6 +71,25 @@ pub enum SyncFrequency {
     Manual,
     Hourly,
     Daily,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SchedulingStrategy {
+    #[default]
+    EarliestAvailable,
+    PriorityWeighted,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScheduleWindow {
+    pub start_hour: u8,
+    pub end_hour: u8,
+    pub days: Vec<u8>, // 0=Sun, 1=Mon, ..., 6=Sat; empty = all weekdays
+}
+
+fn default_true() -> bool {
+    true
 }
 
 fn get_config_dir() -> Result<PathBuf, ConfigError> {

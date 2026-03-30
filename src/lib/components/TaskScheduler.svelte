@@ -74,10 +74,16 @@
     durationMinutes: number;
   }
 
-  // Working hours configuration
-  const WORK_START = 8; // 8 AM
-  const WORK_END = 18; // 6 PM
   const MIN_SLOT_MINUTES = 30;
+
+  // Derive work hours from per-account schedule windows
+  const accountWorkHours = $derived.by(() => {
+    const cal = $config.selected_calendar;
+    if (!cal) return { start: 8, end: 18 };
+    const email = getAccountForCalendar(cal) ?? "";
+    const win = ($config.account_schedule_windows ?? {})[email];
+    return win ? { start: win.start_hour, end: win.end_hour } : { start: 8, end: 18 };
+  });
 
   // Google Calendar color palette (colorId 1-11)
   const calendarColors = [
@@ -192,15 +198,13 @@
       (a, b) => a.start - b.start,
     );
 
-    // Determine start time (either work start or current time if today)
-    let currentMinute = WORK_START * 60;
+    let currentMinute = accountWorkHours.start * 60;
     if (isSelectedToday) {
       const nowMinutes = getHours(today) * 60 + getMinutes(today);
-      // Round up to next 30 minutes
       currentMinute = Math.max(currentMinute, Math.ceil(nowMinutes / 30) * 30);
     }
 
-    const endMinute = WORK_END * 60;
+    const endMinute = accountWorkHours.end * 60;
 
     // Find gaps
     for (const busy of allBusy) {
@@ -635,7 +639,7 @@
 
   async function handleSchedule() {
     if (!$config.selected_calendar) {
-      error = "Please select a calendar in Settings first.";
+      error = "Please select a calendar first.";
       return;
     }
 

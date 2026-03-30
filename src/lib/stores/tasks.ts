@@ -196,6 +196,33 @@ export function updateTaskAllocation(
   );
 }
 
+export async function unscheduleTask(issueKey: string): Promise<void> {
+  const currentTasks = get(tasks);
+  const task = currentTasks.find((t) => t.key === issueKey);
+  if (!task?.calendar_event_uid) return;
+
+  const currentConfig = get(config);
+  if (!currentConfig.selected_calendar) return;
+
+  const accountEmail = getAccountForCalendar(currentConfig.selected_calendar) ?? "";
+  await api.deleteEvent(accountEmail, task.calendar_event_uid, currentConfig.selected_calendar);
+  clearTaskCalendarEvent(issueKey);
+}
+
+export async function unscheduleTasks(issueKeys: string[]): Promise<{ succeeded: string[]; failed: string[] }> {
+  const succeeded: string[] = [];
+  const failed: string[] = [];
+  for (const key of issueKeys) {
+    try {
+      await unscheduleTask(key);
+      succeeded.push(key);
+    } catch {
+      failed.push(key);
+    }
+  }
+  return { succeeded, failed };
+}
+
 export function clearTaskCalendarEvent(issueKey: string): void {
   tasks.update((currentTasks) =>
     currentTasks.map((task) =>

@@ -60,19 +60,19 @@
 
 <style>
   :global(:root) {
-    --bg-base: #202025;
-    --bg-surface: #28282f;
-    --bg-elevated: #31313a;
-    --bg-hover: #3a3a44;
-    --bg-active: #44444f;
+    --bg-base: #272730;
+    --bg-surface: #2f2f3a;
+    --bg-elevated: #383845;
+    --bg-hover: #42424f;
+    --bg-active: #4c4c5a;
 
-    --border-subtle: rgba(255, 255, 255, 0.06);
-    --border-default: rgba(255, 255, 255, 0.1);
-    --border-strong: rgba(255, 255, 255, 0.16);
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-default: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.2);
 
-    --text-primary: #e0e0e4;
-    --text-secondary: #9a9aa0;
-    --text-tertiary: #8a8a92;
+    --text-primary: #e8e8ec;
+    --text-secondary: #a8a8b0;
+    --text-tertiary: #8e8e98;
     --text-inverse: #121214;
 
     --accent-blue: #7cacf8;
@@ -247,7 +247,7 @@
 
   .content {
     flex: 1;
-    padding: 16px 3% 16px;
+    padding: 48px 4% 24px;
     width: 100%;
     overflow-y: auto;
     animation: fadeInUp 0.4s var(--ease-out);

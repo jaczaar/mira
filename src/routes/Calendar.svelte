@@ -108,10 +108,19 @@
   }
 
 
-  const START_HOUR = 8;
-  const END_HOUR = 18;
+  const START_HOUR = 6;
+  const END_HOUR = 22;
   const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR);
-  const HOUR_HEIGHT = 60;
+  const ZOOM_STEPS = [36, 48, 60, 72, 90, 108, 132];
+  let zoomIndex = $state(3); // default 72px
+  const HOUR_HEIGHT = $derived(ZOOM_STEPS[zoomIndex]);
+
+  function zoomIn() {
+    if (zoomIndex < ZOOM_STEPS.length - 1) zoomIndex++;
+  }
+  function zoomOut() {
+    if (zoomIndex > 0) zoomIndex--;
+  }
 
   const weekStart = $derived.by(() => {
     const d = new Date(currentDate);
@@ -376,6 +385,18 @@
         <button class:active={viewMode === "week"} onclick={() => (viewMode = "week")}>Week</button>
         <button class:active={viewMode === "day"} onclick={() => (viewMode = "day")}>Day</button>
       </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick={zoomOut} disabled={zoomIndex === 0} title="Zoom out">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+        <button class="zoom-btn" onclick={zoomIn} disabled={zoomIndex === ZOOM_STEPS.length - 1} title="Zoom in">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+      </div>
       <div class="filter-anchor">
         <button class="nav-btn" onclick={() => showCalendarMenu = !showCalendarMenu} title="Calendars &amp; Settings">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -593,7 +614,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
 
   .cal-nav {
@@ -681,6 +702,36 @@
   .theme-pill.active {
     color: var(--accent-blue);
     background: var(--bg-hover);
+  }
+
+  .zoom-controls {
+    display: flex;
+    gap: 2px;
+  }
+
+  .zoom-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border-default);
+    background: transparent;
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all 0.12s var(--ease-out);
+  }
+
+  .zoom-btn:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+    border-color: var(--border-strong);
+  }
+
+  .zoom-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
   }
 
   .filter-anchor {
@@ -1276,7 +1327,7 @@
   }
 
   .time-gutter-header {
-    width: 48px;
+    width: 56px;
     flex-shrink: 0;
     border-right: 1px solid var(--border-subtle);
   }
@@ -1288,7 +1339,7 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 6px 4px;
+    padding: 10px 4px;
     border-right: 1px solid var(--border-subtle);
   }
 
@@ -1338,7 +1389,7 @@
   }
 
   .time-gutter {
-    width: 48px;
+    width: 56px;
     flex-shrink: 0;
     border-right: 1px solid var(--border-subtle);
   }
@@ -1347,7 +1398,7 @@
     display: flex;
     align-items: flex-start;
     justify-content: flex-end;
-    padding: 0 8px;
+    padding: 0 10px;
   }
 
   .time-label span {
@@ -1394,7 +1445,7 @@
     position: absolute;
     border-left: 3px solid var(--accent-blue);
     border-radius: 5px;
-    padding: 3px 7px;
+    padding: 4px 8px;
     overflow: hidden;
     cursor: pointer;
     transition: transform 0.12s var(--ease-out), box-shadow 0.12s var(--ease-out), filter 0.12s var(--ease-out);

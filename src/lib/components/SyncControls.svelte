@@ -1,15 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { syncState, syncTasksToCalendar, syncCalendarToWorklogs } from "../stores/sync";
+  import { syncState, syncTasksToCalendar } from "../stores/sync";
   import { loadAssignedTasks } from "../stores/tasks";
   import { config, hasToken } from "../stores/config";
   import { googleAccount, loadGoogleAuthStatus } from "../stores/google";
-
-  let worklogStartDate = $state(
-    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-  );
-  let worklogEndDate = $state(new Date().toISOString().split("T")[0]);
-  let showWorklogPanel = $state(false);
 
   onMount(async () => {
     await loadGoogleAuthStatus();
@@ -25,14 +19,6 @@
       await syncTasksToCalendar();
     } catch (error) {
       console.error("Sync failed:", error);
-    }
-  }
-
-  async function handleSyncWorklogs() {
-    try {
-      await syncCalendarToWorklogs(worklogStartDate, worklogEndDate);
-    } catch (error) {
-      console.error("Worklog sync failed:", error);
     }
   }
 
@@ -67,47 +53,7 @@
       {$syncState.status === "syncing" ? "Syncing..." : "Sync to Calendar"}
     </button>
 
-    <button
-      class="action-btn worklog"
-      onclick={() => (showWorklogPanel = !showWorklogPanel)}
-      disabled={$syncState.status === "syncing" || !canSync}
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <polyline points="12 6 12 12 16 14" />
-      </svg>
-      Log Time
-    </button>
   </div>
-
-  {#if showWorklogPanel}
-    <div class="worklog-panel">
-      <div class="panel-header">
-        <h4>Sync Calendar to Jira Worklogs</h4>
-        <span class="hint">Match calendar events to Jira tasks and log work time</span>
-      </div>
-
-      <div class="date-range">
-        <div class="date-input">
-          <label for="start-date">From</label>
-          <input id="start-date" type="date" bind:value={worklogStartDate} />
-        </div>
-        <div class="date-input">
-          <label for="end-date">To</label>
-          <input id="end-date" type="date" bind:value={worklogEndDate} />
-        </div>
-      </div>
-
-      <div class="panel-actions">
-        <button class="action-btn sync" onclick={handleSyncWorklogs}>
-          Sync Worklogs
-        </button>
-        <button class="action-btn ghost" onclick={() => (showWorklogPanel = false)}>
-          Cancel
-        </button>
-      </div>
-    </div>
-  {/if}
 
   {#if $syncState.status === "syncing"}
     <div class="progress">
@@ -201,86 +147,10 @@
     box-shadow: var(--shadow-glow-blue);
   }
 
-  .action-btn.worklog {
-    background: var(--accent-green-dim);
-    border-color: rgba(74, 222, 128, 0.15);
-    color: var(--accent-green);
-  }
-
-  .action-btn.worklog:hover:not(:disabled) {
-    background: rgba(74, 222, 128, 0.18);
-    border-color: rgba(74, 222, 128, 0.3);
-  }
-
   .action-btn.ghost {
     background: transparent;
     border-color: var(--border-default);
     color: var(--text-secondary);
-  }
-
-  .worklog-panel {
-    margin-top: 14px;
-    padding: 16px;
-    background: var(--bg-elevated);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-subtle);
-    animation: fadeInUp 0.25s var(--ease-out);
-  }
-
-  .panel-header h4 {
-    margin: 0 0 4px;
-    font-family: var(--font-display);
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .hint {
-    font-size: 12px;
-    color: var(--text-tertiary);
-  }
-
-  .date-range {
-    display: flex;
-    gap: 12px;
-    margin: 14px 0;
-  }
-
-  .date-input {
-    flex: 1;
-  }
-
-  .date-input label {
-    display: block;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 4px;
-  }
-
-  .date-input input {
-    width: 100%;
-    padding: 7px 10px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-sm);
-    color: var(--text-primary);
-    font-family: var(--font-mono);
-    font-size: 13px;
-    color-scheme: dark;
-  }
-
-  .date-input input:focus {
-    outline: none;
-    border-color: var(--accent-blue);
-    box-shadow: 0 0 0 2px var(--accent-blue-dim);
-  }
-
-  .panel-actions {
-    display: flex;
-    gap: 8px;
   }
 
   .progress {

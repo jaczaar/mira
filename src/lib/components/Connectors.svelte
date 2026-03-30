@@ -3,14 +3,8 @@
   import { open } from "@tauri-apps/plugin-shell";
   import { config, hasToken, loadConfig, saveConfig, deleteJiraToken } from "../stores/config";
   import { googleAccounts, loadGoogleAuthStatus } from "../stores/google";
-  import { googleAuthStart, googleAuthWait, googleAuthSignOut, githubDeviceFlowStart, githubDeviceFlowPoll, jiraAuthStart, jiraAuthWait } from "../api";
+  import { googleAuthStart, googleAuthWait, googleAuthSignOut, jiraAuthStart, jiraAuthWait } from "../api";
   import { hasEmbeddedCredentials, EMBEDDED_GOOGLE_CLIENT_ID, EMBEDDED_GOOGLE_CLIENT_SECRET } from "../google-oauth";
-  import {
-    deleteGitHubToken as deleteGitHubTokenStore,
-    hasGitHubToken as hasGitHubTokenDerived,
-    checkGitHubToken,
-  } from "../stores/github";
-  import { GITHUB_CLIENT_ID, hasGitHubOAuthCredentials } from "../github-oauth";
   import { JIRA_CLIENT_ID, JIRA_CLIENT_SECRET, hasJiraOAuthCredentials } from "../jira-oauth";
 
   let showDropdown = $state(false);
@@ -24,23 +18,15 @@
   let jiraStatus = $state<"idle" | "success" | "error">("idle");
   let jiraMessage = $state("");
 
-  // GitHub Device Flow state
-  let githubStatus = $state<"idle" | "waiting" | "polling" | "success" | "error">("idle");
-  let githubMessage = $state("");
-  let githubUserCode = $state("");
-  let githubPolling = $state(false);
-
   const isGoogleConnected = $derived($googleAccounts.length > 0);
   const isJiraConnected = $derived($hasToken && !!$config.jira_url);
-  const isGitHubConnected = $derived($hasGitHubTokenDerived);
   const connectedCount = $derived(
-    (isGoogleConnected ? 1 : 0) + (isJiraConnected ? 1 : 0) + (isGitHubConnected ? 1 : 0)
+    (isGoogleConnected ? 1 : 0) + (isJiraConnected ? 1 : 0)
   );
 
   onMount(async () => {
     await loadConfig();
     await loadGoogleAuthStatus();
-    await checkGitHubToken();
   });
 
   async function connectGoogle() {
@@ -99,62 +85,6 @@
     await deleteJiraToken();
     jiraStatus = "idle";
     jiraMessage = "";
-  }
-
-  async function connectGitHub() {
-    if (!hasGitHubOAuthCredentials()) return;
-    githubStatus = "waiting";
-    githubMessage = "";
-    githubUserCode = "";
-    try {
-      const deviceCode = await githubDeviceFlowStart(GITHUB_CLIENT_ID);
-      githubUserCode = deviceCode.user_code;
-      githubStatus = "polling";
-
-      await open(deviceCode.verification_uri);
-
-      githubPolling = true;
-      const interval = (deviceCode.interval || 5) * 1000;
-      const expiresAt = Date.now() + deviceCode.expires_in * 1000;
-
-      while (githubPolling && Date.now() < expiresAt) {
-        await new Promise((r) => setTimeout(r, interval));
-        if (!githubPolling) break;
-        try {
-          const displayName = await githubDeviceFlowPoll(GITHUB_CLIENT_ID, deviceCode.device_code);
-          await checkGitHubToken();
-          githubStatus = "success";
-          githubMessage = `Connected as ${displayName}`;
-          githubPolling = false;
-          return;
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          if (msg.includes("authorization_pending") || msg.includes("slow_down")) {
-            continue;
-          }
-          throw err;
-        }
-      }
-
-      if (githubPolling) {
-        githubStatus = "error";
-        githubMessage = "Device code expired. Please try again.";
-        githubPolling = false;
-      }
-    } catch (err) {
-      githubStatus = "error";
-      githubMessage = err instanceof Error ? err.message : String(err);
-      githubPolling = false;
-    }
-  }
-
-  async function disconnectGitHub() {
-    githubPolling = false;
-    await deleteGitHubTokenStore();
-    await checkGitHubToken();
-    githubStatus = "idle";
-    githubMessage = "";
-    githubUserCode = "";
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -244,33 +174,6 @@
       </div>
       {#if jiraMessage}
         <div class="row-error" class:success={jiraStatus === "success"}>{jiraMessage}</div>
-      {/if}
-
-      <div class="dropdown-divider"></div>
-
-      <!-- GitHub -->
-      <div class="row">
-        <div class="row-icon github">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-          </svg>
-        </div>
-        <span class="row-label">GitHub</span>
-        {#if isGitHubConnected}
-          <span class="row-detail">{$config.github_username || ""}</span>
-          <span class="row-status connected">Connected</span>
-          <button class="row-action disconnect" onclick={disconnectGitHub}>Disconnect</button>
-        {:else if githubStatus === "polling" && githubUserCode}
-          <span class="row-detail">Code: <strong>{githubUserCode}</strong></span>
-          <button class="row-action disconnect" onclick={() => { githubPolling = false; githubStatus = "idle"; githubUserCode = ""; }}>Cancel</button>
-        {:else}
-          <button class="row-action connect" onclick={connectGitHub} disabled={githubStatus === "waiting"}>
-            {githubStatus === "waiting" ? "..." : "Connect"}
-          </button>
-        {/if}
-      </div>
-      {#if githubMessage}
-        <div class="row-error" class:success={githubStatus === "success"}>{githubMessage}</div>
       {/if}
     </div>
   {/if}
@@ -367,11 +270,6 @@
   .row-icon.jira {
     background: var(--accent-blue-dim);
     color: var(--accent-blue);
-  }
-
-  .row-icon.github {
-    background: var(--accent-purple-dim);
-    color: var(--accent-purple);
   }
 
   .row-label {
