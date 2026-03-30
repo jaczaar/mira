@@ -1,4 +1,4 @@
-name: Tag on merge
+name: Auto version & release
 
 on:
   push:
@@ -7,26 +7,50 @@ on:
 jobs:
   tag:
     runs-on: ubuntu-latest
+    # Skip if this commit was the auto-bump itself
+    if: "!contains(github.event.head_commit.message, '[auto-release]')"
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get version from package.json
+      - name: Get current version and compute next
         id: version
-        run: echo "version=v$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
-
-      - name: Check if tag exists
-        id: check
         run: |
-          if git rev-parse "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
+          CURRENT=$(jq -r .version package.json)
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+
+          # Find the latest v* tag and bump patch
+          LATEST_TAG=$(git tag -l 'v*' --sort=-version:refname | head -n1)
+          if [ -z "$LATEST_TAG" ]; then
+            NEXT="0.1.0"
           else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
+            # Strip leading v
+            LATEST="${LATEST_TAG#v}"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
+            NEXT="${MAJOR}.${MINOR}.$((PATCH + 1))"
           fi
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NEXT" >> "$GITHUB_OUTPUT"
+          echo "Bumping $LATEST_TAG -> v$NEXT"
 
-      - name: Create and push tag
-        if: steps.check.outputs.exists == 'false'
+      - name: Update version in package.json and tauri.conf.json
         run: |
-          git tag "${{ steps.version.outputs.version }}"
-          git push origin "${{ steps.version.outputs.version }}"
+          NEXT=${{ steps.version.outputs.next }}
+          # Update package.json
+          jq --arg v "$NEXT" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+          # Update tauri.conf.json
+          jq --arg v "$NEXT" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+          # Update Cargo.toml version line
+          sed -i "s/^version = \".*\"/version = \"$NEXT\"/" src-tauri/Cargo.toml
+
+      - name: Commit, tag, and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
+          git commit -m "bump to ${{ steps.version.outputs.tag }} [auto-release]"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin main --tags
