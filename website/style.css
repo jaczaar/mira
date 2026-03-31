@@ -5,9 +5,9 @@
 
 :root {
   /* Background */
-  --bg: #918c84;
-  --bg-card: #878278;
-  --bg-inset: #7d786f;
+  --bg: #a8a39b;
+  --bg-card: #9e998f;
+  --bg-inset: #949089;
 
   /* App window (dark) */
   --app-bg: #1a1a1e;
@@ -99,12 +99,12 @@ a:focus-visible, button:focus-visible {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  background: rgba(145, 140, 132, 0.8);
+  background: rgba(168, 163, 155, 0.8);
   border-bottom: 1px solid var(--border);
   transition: background 0.3s, box-shadow 0.3s;
 }
 .nav.scrolled {
-  background: rgba(145, 140, 132, 0.95);
+  background: rgba(168, 163, 155, 0.95);
   box-shadow: 0 1px 20px rgba(0, 0, 0, 0.06);
 }
 .nav-inner {

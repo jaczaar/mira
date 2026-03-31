@@ -65,14 +65,17 @@
   let allowTaskSplitting = $state(true);
   let accountScheduleWindows = $state<Record<string, ScheduleWindow>>({});
 
+  let skipAnimation = $state($tasks.length > 0);
+
   onMount(async () => {
     await loadConfig();
-    if ($hasToken) {
+    if ($hasToken && $tasks.length === 0) {
       await loadAssignedTasks($config.jql_filter || undefined);
     }
     schedulingStrategy = $config.scheduling_strategy ?? "earliest_available";
     allowTaskSplitting = $config.allow_task_splitting ?? true;
     accountScheduleWindows = $config.account_schedule_windows ?? {};
+    skipAnimation = true;
   });
 
   const activeTasks = $derived($tasks.filter((t) => t.status_category !== "done"));
@@ -394,7 +397,7 @@
           <div
             class="task-row"
             class:selected={selectedKeys.has(task.key)}
-            style="animation: fadeInUp 0.25s var(--ease-out) {Math.min(i, 12) * 25}ms both"
+            style={skipAnimation ? "" : `animation: fadeInUp 0.25s var(--ease-out) ${Math.min(i, 12) * 25}ms both`}
           >
             <button
               class="select-check"

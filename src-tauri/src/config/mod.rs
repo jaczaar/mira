@@ -62,6 +62,13 @@ pub struct AppConfig {
     pub allow_task_splitting: bool,
     // Per-account schedule windows: account email -> ScheduleWindow
     pub account_schedule_windows: std::collections::HashMap<String, ScheduleWindow>,
+    // Persisted set of enabled calendar UIDs for the calendar view
+    pub enabled_calendars: Vec<String>,
+    // Calendar zoom level index (into ZOOM_STEPS array)
+    pub calendar_zoom: Option<u8>,
+    // Calendar day range (hours)
+    pub day_start_hour: Option<u8>,
+    pub day_end_hour: Option<u8>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

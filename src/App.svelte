@@ -60,11 +60,11 @@
 
 <style>
   :global(:root) {
-    --bg-base: #272730;
-    --bg-surface: #2f2f3a;
-    --bg-elevated: #383845;
-    --bg-hover: #42424f;
-    --bg-active: #4c4c5a;
+    --bg-base: #2c2c36;
+    --bg-surface: #34343f;
+    --bg-elevated: #3d3d4a;
+    --bg-hover: #474754;
+    --bg-active: #51515f;
 
     --border-subtle: rgba(255, 255, 255, 0.08);
     --border-default: rgba(255, 255, 255, 0.12);

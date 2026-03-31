@@ -23,6 +23,10 @@ export interface AppConfig {
   scheduling_strategy: "earliest_available" | "priority_weighted";
   allow_task_splitting: boolean;
   account_schedule_windows: Record<string, ScheduleWindow>;
+  enabled_calendars: string[];
+  calendar_zoom: number | null;
+  day_start_hour: number | null;
+  day_end_hour: number | null;
 }
 
 const defaultConfig: AppConfig = {
@@ -45,6 +49,10 @@ const defaultConfig: AppConfig = {
   scheduling_strategy: "earliest_available",
   allow_task_splitting: true,
   account_schedule_windows: {},
+  enabled_calendars: [],
+  calendar_zoom: null,
+  day_start_hour: null,
+  day_end_hour: null,
 };
 
 export const config = writable<AppConfig>(defaultConfig);
