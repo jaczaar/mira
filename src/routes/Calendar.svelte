@@ -8,6 +8,8 @@
     eventsError,
     accountCalendars,
     loadCalendarsForAllAccounts,
+    getCachedEvents,
+    setCachedEvents,
   } from "../lib/stores/calendar";
   import { loadConfig, config, saveConfig } from "../lib/stores/config";
   import {
@@ -20,23 +22,30 @@
   import { themeMode, type ThemeMode } from "../lib/stores/theme";
   import type { CalendarEvent } from "../lib/api";
 
+  import { onDestroy } from "svelte";
+
   let currentDate = $state(new Date());
   let showCalendarMenu = $state(false);
+  let now = $state(new Date());
+  let nowLineInterval: ReturnType<typeof setInterval> | null = null;
+
+  onDestroy(() => { if (nowLineInterval) clearInterval(nowLineInterval); });
 
   function setTheme(mode: ThemeMode) {
     themeMode.set(mode);
   }
   let viewMode = $state<"week" | "day">("week");
 
+  // Richer event colors: higher opacity bg, solid border, bright text
   const EVENT_COLORS = [
-    { bg: "rgba(59, 130, 246, 0.18)", border: "#3b82f6", text: "#93bbfd", title: "#dbeafe" },   // blue
-    { bg: "rgba(139, 92, 246, 0.18)", border: "#8b5cf6", text: "#b4a0f4", title: "#e0d5fc" },   // violet
-    { bg: "rgba(236, 72, 153, 0.18)", border: "#ec4899", text: "#f0a0c8", title: "#fce7f3" },   // pink
-    { bg: "rgba(245, 158, 11, 0.18)", border: "#f59e0b", text: "#f5c46b", title: "#fef3c7" },   // amber
-    { bg: "rgba(16, 185, 129, 0.18)", border: "#10b981", text: "#6dd7b5", title: "#d1fae5" },   // emerald
-    { bg: "rgba(6, 182, 212, 0.18)", border: "#06b6d4", text: "#67d8ec", title: "#cffafe" },    // cyan
-    { bg: "rgba(244, 63, 94, 0.18)", border: "#f43f5e", text: "#f8a0b0", title: "#ffe4e6" },    // rose
-    { bg: "rgba(34, 197, 94, 0.18)", border: "#22c55e", text: "#6ee7a0", title: "#dcfce7" },    // green
+    { bg: "rgba(59, 130, 246, 0.40)", border: "#3b82f6", text: "#a8c8f8", title: "#e0edfe", wash: "rgba(59, 130, 246, 0.06)" },   // blue
+    { bg: "rgba(139, 92, 246, 0.40)", border: "#8b5cf6", text: "#c4b0f4", title: "#e4d8fe", wash: "rgba(139, 92, 246, 0.06)" },   // violet
+    { bg: "rgba(236, 72, 153, 0.40)", border: "#ec4899", text: "#f0a0c4", title: "#fcd8e8", wash: "rgba(236, 72, 153, 0.06)" },   // pink
+    { bg: "rgba(245, 158, 11, 0.40)", border: "#f59e0b", text: "#f0c870", title: "#fef0d0", wash: "rgba(245, 158, 11, 0.06)" },   // amber
+    { bg: "rgba(16, 185, 129, 0.40)", border: "#10b981", text: "#80d8b0", title: "#c8f0de", wash: "rgba(16, 185, 129, 0.06)" },   // emerald
+    { bg: "rgba(6, 182, 212, 0.40)", border: "#06b6d4", text: "#70c8dc", title: "#c8eef6", wash: "rgba(6, 182, 212, 0.06)" },     // cyan
+    { bg: "rgba(244, 63, 94, 0.40)", border: "#f43f5e", text: "#f4a0b0", title: "#fcd0d8", wash: "rgba(244, 63, 94, 0.06)" },     // rose
+    { bg: "rgba(34, 197, 94, 0.40)", border: "#22c55e", text: "#88dca4", title: "#ccf4d8", wash: "rgba(34, 197, 94, 0.06)" },     // green
   ];
 
   function hashString(s: string): number {
@@ -100,6 +109,7 @@
       await loadCalendarsForAllAccounts($googleAccounts.map(a => a.email));
       // Enable all calendars from the new account
       enabledCalendars = new Set([...enabledCalendars, ...$calendars.map(c => c.uid)]);
+      saveConfig({ ...$config, enabled_calendars: [...enabledCalendars] });
     } catch (err) {
       connectError = err instanceof Error ? err.message : String(err);
     } finally {
@@ -108,18 +118,27 @@
   }
 
 
-  const START_HOUR = 6;
-  const END_HOUR = 22;
-  const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR);
-  const ZOOM_STEPS = [36, 48, 60, 72, 90, 108, 132];
-  let zoomIndex = $state(3); // default 72px
+  const START_HOUR = 5;
+  const END_HOUR = 23.5; // 11:30 PM
+  const GRID_OFFSET = 15; // start 15 min before the hour (4:45) so labels aren't cut off
+  const HOURS = Array.from({ length: 18 }, (_, i) => i + START_HOUR); // 5 AM through 10 PM labels
+  const ZOOM_STEPS = [44, 48, 52, 56, 60, 66, 72, 80, 90, 100, 112, 126, 144];
+  let zoomIndex = $state(4); // default 60px
   const HOUR_HEIGHT = $derived(ZOOM_STEPS[zoomIndex]);
+  const nowMinutesCurrent = $derived(now.getHours() * 60 + now.getMinutes());
+  const nowTopPx = $derived(((nowMinutesCurrent - START_HOUR * 60) / 60) * HOUR_HEIGHT + (HOUR_HEIGHT * GRID_OFFSET / 60));
 
   function zoomIn() {
-    if (zoomIndex < ZOOM_STEPS.length - 1) zoomIndex++;
+    if (zoomIndex < ZOOM_STEPS.length - 1) {
+      zoomIndex++;
+      saveConfig({ ...$config, calendar_zoom: zoomIndex });
+    }
   }
   function zoomOut() {
-    if (zoomIndex > 0) zoomIndex--;
+    if (zoomIndex > 0) {
+      zoomIndex--;
+      saveConfig({ ...$config, calendar_zoom: zoomIndex });
+    }
   }
 
   const weekStart = $derived.by(() => {
@@ -171,6 +190,30 @@
     return `${h - 12} PM`;
   }
 
+  function getEventDurationMinutes(event: CalendarEvent): number {
+    const start = new Date(event.start_date);
+    const end = new Date(event.end_date);
+    return (end.getTime() - start.getTime()) / (1000 * 60);
+  }
+
+  function formatEventTime(event: CalendarEvent): string {
+    const d = new Date(event.start_date);
+    const h = d.getHours();
+    const m = d.getMinutes();
+    const period = h >= 12 ? "PM" : "AM";
+    const hour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return m === 0 ? `${hour} ${period}` : `${hour}:${m.toString().padStart(2, "0")} ${period}`;
+  }
+
+  function getEventCountForDay(day: Date): number {
+    return getTimedEventsForDay(day).length + getAllDayEventsForDay(day).length;
+  }
+
+  function isLocationEvent(event: CalendarEvent): boolean {
+    const s = event.summary?.toLowerCase() ?? "";
+    return s === "office" || s === "wfh" || s === "work from home" || s === "remote" || s === "home";
+  }
+
   function getEventStyle(event: CalendarEvent, dayDate: Date): { top: string; height: string } | null {
     const start = new Date(event.start_date);
     const end = new Date(event.end_date);
@@ -186,10 +229,10 @@
     const clampedEnd = Math.min(endMinutes, END_HOUR * 60);
     const durationMinutes = Math.max(clampedEnd - clampedStart, 15);
 
-    const top = ((clampedStart - START_HOUR * 60) / 60) * HOUR_HEIGHT;
-    const height = (durationMinutes / 60) * HOUR_HEIGHT;
+    const top = ((clampedStart - START_HOUR * 60) / 60) * HOUR_HEIGHT + 1;
+    const height = (durationMinutes / 60) * HOUR_HEIGHT - 2;
 
-    return { top: `${top}px`, height: `${Math.max(height, 24)}px` };
+    return { top: `${top}px`, height: `${height}px` };
   }
 
   function isAllDay(event: CalendarEvent): boolean {
@@ -235,44 +278,56 @@
     if (events.length === 0) return [];
 
     const sorted = [...events].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
-    const layouts: EventLayout[] = [];
-    const columns: { end: number }[] = [];
 
-    for (const event of sorted) {
-      const start = new Date(event.start_date).getTime();
-      const end = new Date(event.end_date).getTime();
+    // Build connected overlap groups, then assign columns within each group
+    const times = sorted.map(e => ({
+      start: new Date(e.start_date).getTime(),
+      end: new Date(e.end_date).getTime(),
+    }));
 
-      let placed = false;
-      for (let col = 0; col < columns.length; col++) {
-        if (start >= columns[col].end) {
-          columns[col].end = end;
-          layouts.push({ event, column: col, totalColumns: 0 });
-          placed = true;
-          break;
-        }
-      }
-      if (!placed) {
-        columns.push({ end });
-        layouts.push({ event, column: columns.length - 1, totalColumns: 0 });
+    // Find connected components of overlapping events
+    const groups: number[][] = [];
+    let currentGroup: number[] = [];
+    let groupEnd = 0;
+
+    for (let i = 0; i < sorted.length; i++) {
+      if (currentGroup.length === 0 || times[i].start < groupEnd) {
+        currentGroup.push(i);
+        groupEnd = Math.max(groupEnd, times[i].end);
+      } else {
+        groups.push(currentGroup);
+        currentGroup = [i];
+        groupEnd = times[i].end;
       }
     }
+    if (currentGroup.length > 0) groups.push(currentGroup);
 
-    // Group overlapping events and set totalColumns
-    for (let i = 0; i < layouts.length; i++) {
-      const ev = layouts[i].event;
-      const evStart = new Date(ev.start_date).getTime();
-      const evEnd = new Date(ev.end_date).getTime();
-      let maxCol = layouts[i].column;
+    // Assign columns within each group
+    const layouts: EventLayout[] = [];
+    for (const group of groups) {
+      const columns: { end: number }[] = [];
+      const groupLayouts: { idx: number; column: number }[] = [];
 
-      for (let j = 0; j < layouts.length; j++) {
-        const other = layouts[j].event;
-        const otherStart = new Date(other.start_date).getTime();
-        const otherEnd = new Date(other.end_date).getTime();
-        if (otherStart < evEnd && otherEnd > evStart) {
-          maxCol = Math.max(maxCol, layouts[j].column);
+      for (const idx of group) {
+        let placed = false;
+        for (let col = 0; col < columns.length; col++) {
+          if (times[idx].start >= columns[col].end) {
+            columns[col].end = times[idx].end;
+            groupLayouts.push({ idx, column: col });
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          columns.push({ end: times[idx].end });
+          groupLayouts.push({ idx, column: columns.length - 1 });
         }
       }
-      layouts[i].totalColumns = maxCol + 1;
+
+      const totalColumns = columns.length;
+      for (const { idx, column } of groupLayouts) {
+        layouts.push({ event: sorted[idx], column, totalColumns });
+      }
     }
 
     return layouts;
@@ -300,6 +355,8 @@
       next.add(uid);
     }
     enabledCalendars = next;
+    // Persist selection
+    saveConfig({ ...$config, enabled_calendars: [...next] });
   }
 
   async function loadWeekEvents() {
@@ -311,7 +368,13 @@
     const start = formatDate(weekStart) + "T00:00:00";
     const end = formatDate(weekEnd) + "T23:59:59";
 
-    eventsLoading.set(true);
+    // Check if all calendars are cached — if so, skip loading state
+    let allCached = true;
+    for (const calId of enabledCalendars) {
+      if (!getCachedEvents(calId, start, end)) { allCached = false; break; }
+    }
+
+    if (!allCached) eventsLoading.set(true);
     eventsError.set(null);
     try {
       const allEvents: CalendarEvent[] = [];
@@ -319,7 +382,13 @@
       for (const calId of enabledCalendars) {
         const accountEmail = getAccountForCalendar(calId);
         if (!accountEmail) continue;
-        const events = await api.getEventsForDateRange(accountEmail, calId, start, end);
+
+        let events = getCachedEvents(calId, start, end);
+        if (!events) {
+          events = await api.getEventsForDateRange(accountEmail, calId, start, end);
+          setCachedEvents(calId, start, end, events);
+        }
+
         for (const event of events) {
           const normStart = event.start_date.replace(/[+-]\d{2}:\d{2}$/, "").split("T")[0];
           const normEnd = event.end_date.replace(/[+-]\d{2}:\d{2}$/, "").split("T")[0];
@@ -339,18 +408,43 @@
   }
 
   onMount(async () => {
-    await loadConfig();
-    await loadGoogleAuthStatus();
+    // Restore zoom immediately from store
+    if ($config.calendar_zoom != null && $config.calendar_zoom >= 0 && $config.calendar_zoom < ZOOM_STEPS.length) {
+      zoomIndex = $config.calendar_zoom;
+    }
 
-    if ($googleAccounts.length > 0) {
-      await loadCalendarsForAllAccounts($googleAccounts.map(a => a.email));
-      if ($config.selected_calendar) {
+    const alreadyLoaded = $calendars.length > 0;
+
+    if (!alreadyLoaded) {
+      // First mount: load everything from scratch
+      await loadConfig();
+      await loadGoogleAuthStatus();
+
+      if ($config.calendar_zoom != null && $config.calendar_zoom >= 0 && $config.calendar_zoom < ZOOM_STEPS.length) {
+        zoomIndex = $config.calendar_zoom;
+      }
+
+      if ($googleAccounts.length > 0) {
+        await loadCalendarsForAllAccounts($googleAccounts.map(a => a.email));
+      }
+    }
+
+    // Restore enabled calendars from config
+    if ($calendars.length > 0) {
+      if ($config.enabled_calendars && $config.enabled_calendars.length > 0) {
+        const validUids = new Set($calendars.map(c => c.uid));
+        const restored = $config.enabled_calendars.filter(uid => validUids.has(uid));
+        enabledCalendars = new Set(restored.length > 0 ? restored : $calendars.map(c => c.uid));
+      } else if ($config.selected_calendar) {
         enabledCalendars = new Set([$config.selected_calendar]);
-      } else if ($calendars.length > 0) {
+      } else {
         enabledCalendars = new Set($calendars.map(c => c.uid));
       }
       await loadWeekEvents();
     }
+
+    // Update now-line every minute
+    nowLineInterval = setInterval(() => { now = new Date(); }, 60_000);
   });
 
   $effect(() => {
@@ -529,9 +623,15 @@
       <div class="day-headers">
         <div class="time-gutter-header"></div>
         {#each viewMode === "week" ? weekDays : [currentDate] as day}
+          {@const eventCount = getEventCountForDay(day)}
           <div class="day-header" class:today={isToday(day)}>
             <span class="day-name">{formatDayHeader(day)}</span>
             <span class="day-num" class:today={isToday(day)}>{formatDayNumber(day)}</span>
+            {#if eventCount > 0}
+              <span class="day-density">
+                {#each Array(Math.min(eventCount, 5)) as _}<span class="density-dot"></span>{/each}
+              </span>
+            {/if}
           </div>
         {/each}
       </div>
@@ -545,9 +645,15 @@
             <div class="allday-cell" class:today={isToday(day)}>
               {#each getAllDayEventsForDay(day) as event}
                 {@const color = getEventColor(event)}
-                <div class="allday-event" title={event.summary} style="background: {color.bg}; color: {color.title}; border-left-color: {color.border}">
-                  {event.summary}
-                </div>
+                {#if isLocationEvent(event)}
+                  <div class="allday-location" title={event.summary} style="color: {color.text}">
+                    {event.summary}
+                  </div>
+                {:else}
+                  <div class="allday-event" title={event.summary} style="background: {color.bg}; color: {color.title}; border-left-color: {color.border}">
+                    {event.summary}
+                  </div>
+                {/if}
               {/each}
             </div>
           {/each}
@@ -555,7 +661,7 @@
       {/if}
 
       <div class="grid-body">
-        <div class="time-gutter">
+        <div class="time-gutter" style="padding-top: {HOUR_HEIGHT * GRID_OFFSET / 60}px">
           {#each HOURS as hour}
             <div class="time-label" style="height: {HOUR_HEIGHT}px">
               <span>{formatHour(hour)}</span>
@@ -564,22 +670,40 @@
         </div>
 
         <div class="days-container">
-          {#each viewMode === "week" ? weekDays : [currentDate] as day}
-            <div class="day-column" class:today={isToday(day)}>
+          {#each viewMode === "week" ? weekDays : [currentDate] as day, dayIndex}
+            <div class="day-column" class:today={isToday(day)} style="padding-top: {HOUR_HEIGHT * GRID_OFFSET / 60}px">
               {#each HOURS as _hour}
                 <div class="hour-slot" style="height: {HOUR_HEIGHT}px"></div>
               {/each}
 
+              {#if nowMinutesCurrent >= START_HOUR * 60 && nowMinutesCurrent <= END_HOUR * 60}
+                {#if isToday(day)}
+                  <div class="now-line" style="top: {nowTopPx}px">
+                    <span class="now-dot"></span>
+                  </div>
+                {:else}
+                  <div class="now-line now-line--ghost" style="top: {nowTopPx}px"></div>
+                {/if}
+              {/if}
+
               {#each layoutEventsForDay(day) as { event, column, totalColumns }}
                 {@const style = getEventStyle(event, day)}
                 {@const color = getEventColor(event)}
+                {@const duration = getEventDurationMinutes(event)}
+                {@const isShort = duration <= 45}
                 {#if style}
                   <div
                     class="event-block"
+                    class:event-block--short={isShort}
                     style="top: {style.top}; height: {style.height}; background: {color.bg}; border-left-color: {color.border}; left: calc(3px + {column} * (100% - 6px) / {totalColumns}); width: calc((100% - 6px) / {totalColumns} - 2px)"
                     title={event.summary}
                   >
-                    <span class="event-title" style="color: {color.title}">{event.summary}</span>
+                    {#if isShort}
+                      <span class="event-title" style="color: {color.title}">{formatEventTime(event)} · {event.summary}</span>
+                    {:else}
+                      <span class="event-time" style="color: {color.text}">{formatEventTime(event)}</span>
+                      <span class="event-title" style="color: {color.title}">{event.summary}</span>
+                    {/if}
                   </div>
                 {/if}
               {/each}
@@ -1320,6 +1444,16 @@
     cursor: pointer;
   }
 
+  .allday-location {
+    font-size: 9px;
+    font-weight: 500;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.5;
+    padding: 2px 4px;
+  }
+
   .day-headers {
     display: flex;
     border-bottom: 1px solid var(--border-subtle);
@@ -1380,6 +1514,25 @@
     font-weight: 600;
   }
 
+  .day-density {
+    display: flex;
+    gap: 2px;
+    margin-left: 2px;
+  }
+
+  .density-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+    opacity: 0.5;
+  }
+
+  .day-header.today .density-dot {
+    background: var(--accent-blue);
+    opacity: 0.6;
+  }
+
   .grid-body {
     display: flex;
     overflow-y: auto;
@@ -1427,6 +1580,30 @@
     background: var(--today-tint);
   }
 
+  .now-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 2px solid #e53935;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  .now-dot {
+    position: absolute;
+    top: -5px;
+    left: -4px;
+    width: 8px;
+    height: 8px;
+    background: #e53935;
+    border-radius: 50%;
+  }
+
+  .now-line--ghost {
+    border-top: 1px dashed rgba(229, 57, 53, 0.2);
+  }
+
   .hour-slot {
     border-bottom: 1px solid var(--border-subtle);
     position: relative;
@@ -1460,6 +1637,18 @@
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
     transform: scale(1.01);
     z-index: 5;
+  }
+
+  .event-block--short {
+    flex-direction: row;
+    align-items: center;
+    padding: 2px 6px;
+  }
+
+  .event-block--short .event-title {
+    font-size: 10px;
+    -webkit-line-clamp: 1;
+    white-space: nowrap;
   }
 
   .event-time {

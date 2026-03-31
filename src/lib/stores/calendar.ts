@@ -10,6 +10,30 @@ export const calendarEvents = writable<CalendarEvent[]>([]);
 export const eventsLoading = writable<boolean>(false);
 export const eventsError = writable<string | null>(null);
 
+// In-memory event cache: "calId|start|end" -> CalendarEvent[]
+const eventCache = new Map<string, { events: CalendarEvent[]; ts: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(calId: string, start: string, end: string): string {
+  return `${calId}|${start}|${end}`;
+}
+
+export function getCachedEvents(calId: string, start: string, end: string): CalendarEvent[] | null {
+  const key = getCacheKey(calId, start, end);
+  const entry = eventCache.get(key);
+  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.events;
+  if (entry) eventCache.delete(key);
+  return null;
+}
+
+export function setCachedEvents(calId: string, start: string, end: string, events: CalendarEvent[]): void {
+  eventCache.set(getCacheKey(calId, start, end), { events, ts: Date.now() });
+}
+
+export function invalidateCache(): void {
+  eventCache.clear();
+}
+
 // Per-account calendar map: email -> CalendarInfo[]
 export const accountCalendars = writable<Map<string, CalendarInfo[]>>(new Map());
 
