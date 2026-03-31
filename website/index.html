@@ -3,32 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mira — Auto-scheduling for developers</title>
-  <meta name="description" content="Auto-schedule your Jira tasks and GitHub PRs onto Google Calendar. Anyone can contribute — no coding required." />
-  <meta name="theme-color" content="#272730" />
+  <title>Mira — Auto-schedule your dev work</title>
+  <meta name="description" content="Open-source auto-scheduling for developers. Jira tasks and GitHub PRs on your Google Calendar. Contribute features without writing code." />
+  <meta name="theme-color" content="#918c84" />
   <link rel="icon" type="image/png" href="icon.png" />
+
+  <meta property="og:title" content="Mira — Auto-schedule your dev work" />
+  <meta property="og:description" content="Open-source auto-scheduling. Jira + GitHub PRs on Google Calendar. Anyone can contribute." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mira.jaczaar.com" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Sora:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <div class="ambient-glow"></div>
-
-  <!-- Nav -->
-  <nav class="nav">
+  <nav class="nav" id="nav">
     <div class="nav-inner">
       <a href="#" class="nav-brand">
-        <span class="brand-icon">M</span>
-        <span class="brand-text">Mira</span>
+        <span class="brand-mark">M</span>
+        Mira
       </a>
       <div class="nav-links">
         <a href="#features">Features</a>
-        <a href="#contribute">Contribute</a>
-        <a href="https://github.com/jaczaar/mira" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/jaczaar/mira" target="_blank" rel="noopener" class="nav-gh">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          GitHub
+        </a>
         <a href="#download" class="nav-cta">Download</a>
       </div>
     </div>
@@ -37,368 +41,250 @@
   <!-- Hero -->
   <section class="hero">
     <div class="container">
-      <div class="hero-badge">
-        <span class="badge-dot"></span>
-        Open Source — Everyone Can Contribute
-      </div>
-      <h1 class="hero-title">
-        Your calendar,<br />
-        <span class="gradient-text">on autopilot.</span>
-      </h1>
-      <p class="hero-subtitle">
-        Mira auto-schedules your Jira tasks, GitHub PRs, and Google Calendar events.
-        Built by its own community — anyone can improve it, no coding required.
-      </p>
-      <div class="hero-actions">
-        <a href="#download" class="btn btn-primary">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download for Free
-        </a>
-        <a href="#contribute" class="btn btn-secondary">
-          Learn How to Contribute
-        </a>
+      <h1 class="hero-title">Tasks, <span class="accent">scheduled.</span></h1>
+      <div class="hero-integrations">
+        <div class="integration">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11.571 0C5.135 0 0 5.135 0 11.571c0 6.436 5.135 11.571 11.571 11.571 6.436 0 11.571-5.135 11.571-11.571C23.143 5.135 18.008 0 11.571 0zm-1.37 16.357H6.857L11.571 3.5v5.786h3.357L11.571 20.5v-4.143z"/></svg>
+          <span>Jira</span>
+        </div>
+        <div class="integration">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          <span>GitHub</span>
+        </div>
+        <div class="integration">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          <span>Google Calendar</span>
+        </div>
+        <div class="integration integration--more">
+          <span>+ more to come</span>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ============ APP PREVIEWS ============ -->
-  <section class="previews">
+  <!-- Interactive App Preview -->
+  <section class="showcase" id="app">
     <div class="container">
-
-      <!-- Preview 1: Calendar -->
-      <div class="app-frame">
-        <div class="frame-chrome">
-          <div class="traffic-lights">
-            <span class="dot red"></span>
-            <span class="dot yellow"></span>
-            <span class="dot green"></span>
-          </div>
-          <div class="frame-nav">
-            <span class="frame-nav-item">Calendar</span>
-            <span class="frame-nav-item active">Dashboard</span>
-            <span class="frame-nav-item">Contribute</span>
-          </div>
+      <div class="app-tabs" id="appTabs">
+        <button class="tab active" data-tab="calendar">Calendar</button>
+        <button class="tab" data-tab="dashboard">Dashboard</button>
+        <button class="tab" data-tab="contribute">Contribute</button>
+      </div>
+      <div class="app-window reveal">
+        <div class="window-bar">
+          <div class="window-dots"><span></span><span></span><span></span></div>
+          <span class="window-bar-title">Mira</span>
         </div>
 
-        <!-- RENDER: Calendar Week View -->
-        <div class="render render-calendar">
-          <div class="cal-toolbar">
-            <div class="cal-toolbar-left">
-              <button class="cal-nav-btn">&lsaquo;</button>
-              <button class="cal-today-btn">Today</button>
-              <button class="cal-nav-btn">&rsaquo;</button>
-              <span class="cal-month">March 2026</span>
-            </div>
-            <div class="cal-toolbar-right">
-              <div class="cal-view-toggle">
+        <!-- Calendar View -->
+        <div class="window-body tab-panel active" id="panel-calendar">
+          <div class="cal">
+            <div class="cal-header">
+              <div class="cal-nav">
+                <button class="cal-btn">&lsaquo;</button>
+                <button class="cal-btn cal-today">Today</button>
+                <button class="cal-btn">&rsaquo;</button>
+                <span class="cal-title">March 2026</span>
+              </div>
+              <div class="cal-views">
                 <button class="active">Week</button>
                 <button>Day</button>
               </div>
             </div>
-          </div>
-          <div class="cal-grid">
-            <div class="cal-gutter">
-              <div class="cal-gutter-header"></div>
-              <div class="cal-hours">
-                <span>8 AM</span><span>9 AM</span><span>10 AM</span><span>11 AM</span><span>12 PM</span><span>1 PM</span><span>2 PM</span><span>3 PM</span><span>4 PM</span>
+            <div class="cal-grid">
+              <div class="cal-gutter">
+                <div class="cal-gutter-head"></div>
+                <div class="cal-times">
+                  <span>8 AM</span><span>9 AM</span><span>10 AM</span><span>11 AM</span><span>12 PM</span><span>1 PM</span><span>2 PM</span><span>3 PM</span><span>4 PM</span>
+                </div>
               </div>
-            </div>
-            <div class="cal-days">
-              <div class="cal-day-headers">
-                <div class="cal-day-header"><span class="day-name">MON</span><span class="day-num">30</span></div>
-                <div class="cal-day-header today"><span class="day-name">TUE</span><span class="day-num">31</span></div>
-                <div class="cal-day-header"><span class="day-name">WED</span><span class="day-num">1</span></div>
-                <div class="cal-day-header"><span class="day-name">THU</span><span class="day-num">2</span></div>
-                <div class="cal-day-header"><span class="day-name">FRI</span><span class="day-num">3</span></div>
-              </div>
-              <div class="cal-body">
-                <!-- Monday -->
-                <div class="cal-col">
-                  <div class="cal-event blue" style="top: 12%; height: 18%;"><span class="ev-title">MC-412 Fix auth timeout</span><span class="ev-time">9:00 – 10:30</span></div>
-                  <div class="cal-event violet" style="top: 34%; height: 8%;"><span class="ev-title">Standup</span><span class="ev-time">11:00</span></div>
-                  <div class="cal-event emerald" style="top: 50%; height: 22%;"><span class="ev-title">MC-389 API rate limiter</span><span class="ev-time">1:00 – 3:00</span></div>
+              <div class="cal-cols">
+                <div class="cal-day-row">
+                  <div class="cal-dh"><span class="dn">MON</span><span class="dd">30</span></div>
+                  <div class="cal-dh is-today"><span class="dn">TUE</span><span class="dd">31</span></div>
+                  <div class="cal-dh"><span class="dn">WED</span><span class="dd">1</span></div>
+                  <div class="cal-dh"><span class="dn">THU</span><span class="dd">2</span></div>
+                  <div class="cal-dh"><span class="dn">FRI</span><span class="dd">3</span></div>
                 </div>
-                <!-- Tuesday (today) -->
-                <div class="cal-col today-col">
-                  <div class="cal-event amber" style="top: 2%; height: 14%;"><span class="ev-title">PR-27 Review: DB migration</span><span class="ev-time">8:00 – 9:00</span></div>
-                  <div class="cal-event emerald" style="top: 22%; height: 22%;"><span class="ev-title">MC-389 Rate limiter (cont.)</span><span class="ev-time">10:00 – 12:00</span></div>
-                  <div class="cal-event rose" style="top: 50%; height: 12%;"><span class="ev-title">1:1 with Manager</span><span class="ev-time">1:00 – 2:00</span></div>
-                  <div class="cal-event blue" style="top: 68%; height: 16%;"><span class="ev-title">MC-415 Cache layer</span><span class="ev-time">3:00 – 4:30</span></div>
-                </div>
-                <!-- Wednesday -->
-                <div class="cal-col">
-                  <div class="cal-event cyan" style="top: 12%; height: 22%;"><span class="ev-title">MC-415 Cache layer (cont.)</span><span class="ev-time">9:00 – 11:00</span></div>
-                  <div class="cal-event violet" style="top: 38%; height: 8%;"><span class="ev-title">Standup</span><span class="ev-time">11:30</span></div>
-                  <div class="cal-event amber" style="top: 56%; height: 14%;"><span class="ev-title">PR-31 Review: Frontend</span><span class="ev-time">2:00 – 3:00</span></div>
-                </div>
-                <!-- Thursday -->
-                <div class="cal-col">
-                  <div class="cal-event emerald" style="top: 2%; height: 26%;"><span class="ev-title">MC-420 Deploy pipeline</span><span class="ev-time">8:00 – 10:30</span></div>
-                  <div class="cal-event pink" style="top: 34%; height: 8%;"><span class="ev-title">Sprint retro</span><span class="ev-time">11:00</span></div>
-                  <div class="cal-event blue" style="top: 50%; height: 18%;"><span class="ev-title">MC-421 Docs update</span><span class="ev-time">1:00 – 2:30</span></div>
-                </div>
-                <!-- Friday -->
-                <div class="cal-col">
-                  <div class="cal-event violet" style="top: 2%; height: 12%;"><span class="ev-title">Sprint planning</span><span class="ev-time">8:00 – 9:00</span></div>
-                  <div class="cal-event amber" style="top: 22%; height: 14%;"><span class="ev-title">PR-33 Review: API tests</span><span class="ev-time">10:00 – 11:00</span></div>
-                  <div class="cal-event cyan" style="top: 44%; height: 20%;"><span class="ev-title">MC-422 Webhook handler</span><span class="ev-time">12:30 – 2:30</span></div>
+                <div class="cal-body">
+                  <div class="cal-col">
+                    <div class="cal-ev ev-blue" style="top:12%;height:18%"><span class="ev-t">MC-412 Fix auth timeout</span><span class="ev-s">9:00 – 10:30</span></div>
+                    <div class="cal-ev ev-teal" style="top:34%;height:8%"><span class="ev-t">Standup</span><span class="ev-s">11:00</span></div>
+                    <div class="cal-ev ev-green" style="top:50%;height:22%"><span class="ev-t">MC-389 API rate limiter</span><span class="ev-s">1:00 – 3:00</span></div>
+                  </div>
+                  <div class="cal-col col-today">
+                    <div class="cal-ev ev-amber" style="top:2%;height:14%"><span class="ev-t">PR-27 Review: DB migration</span><span class="ev-s">8:00 – 9:00</span></div>
+                    <div class="cal-ev ev-green" style="top:22%;height:22%"><span class="ev-t">MC-389 Rate limiter (cont.)</span><span class="ev-s">10:00 – 12:00</span></div>
+                    <div class="cal-ev ev-coral" style="top:50%;height:12%"><span class="ev-t">1:1 with Manager</span><span class="ev-s">1:00 – 2:00</span></div>
+                    <div class="cal-ev ev-blue" style="top:68%;height:16%"><span class="ev-t">MC-415 Cache layer</span><span class="ev-s">3:00 – 4:30</span></div>
+                  </div>
+                  <div class="cal-col">
+                    <div class="cal-ev ev-teal" style="top:12%;height:22%"><span class="ev-t">MC-415 Cache layer (cont.)</span><span class="ev-s">9:00 – 11:00</span></div>
+                    <div class="cal-ev ev-blue" style="top:38%;height:8%"><span class="ev-t">Standup</span><span class="ev-s">11:30</span></div>
+                    <div class="cal-ev ev-amber" style="top:56%;height:14%"><span class="ev-t">PR-31 Review: Frontend</span><span class="ev-s">2:00 – 3:00</span></div>
+                  </div>
+                  <div class="cal-col">
+                    <div class="cal-ev ev-green" style="top:2%;height:26%"><span class="ev-t">MC-420 Deploy pipeline</span><span class="ev-s">8:00 – 10:30</span></div>
+                    <div class="cal-ev ev-coral" style="top:34%;height:8%"><span class="ev-t">Sprint retro</span><span class="ev-s">11:00</span></div>
+                    <div class="cal-ev ev-blue" style="top:50%;height:18%"><span class="ev-t">MC-421 Docs update</span><span class="ev-s">1:00 – 2:30</span></div>
+                  </div>
+                  <div class="cal-col">
+                    <div class="cal-ev ev-teal" style="top:2%;height:12%"><span class="ev-t">Sprint planning</span><span class="ev-s">8:00 – 9:00</span></div>
+                    <div class="cal-ev ev-amber" style="top:22%;height:14%"><span class="ev-t">PR-33 Review: API tests</span><span class="ev-s">10:00 – 11:00</span></div>
+                    <div class="cal-ev ev-green" style="top:44%;height:20%"><span class="ev-t">MC-422 Webhook handler</span><span class="ev-s">12:30 – 2:30</span></div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Preview 2: Dashboard -->
-      <div class="app-frame">
-        <div class="frame-chrome">
-          <div class="traffic-lights">
-            <span class="dot red"></span>
-            <span class="dot yellow"></span>
-            <span class="dot green"></span>
-          </div>
-          <div class="frame-nav">
-            <span class="frame-nav-item active">Calendar</span>
-            <span class="frame-nav-item">Dashboard</span>
-            <span class="frame-nav-item">Contribute</span>
+        <!-- Dashboard View -->
+        <div class="window-body tab-panel" id="panel-dashboard">
+          <div class="dash">
+            <div class="dash-top">
+              <h2 class="dash-title">Mira</h2>
+              <span class="dash-sync"><span class="sync-dot"></span>Synced</span>
+              <div class="dash-actions">
+                <button class="dash-btn">Refresh</button>
+                <button class="dash-btn dash-btn--accent">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                  Sync to Calendar
+                </button>
+                <button class="dash-btn dash-btn--primary">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  Auto-Schedule
+                </button>
+              </div>
+            </div>
+            <div class="dash-toolbar">
+              <div class="dash-pills">
+                <button class="pill active">All <span class="pill-n">8</span></button>
+                <button class="pill">Unscheduled <span class="pill-n">3</span></button>
+                <button class="pill">Scheduled <span class="pill-n">5</span></button>
+              </div>
+              <div class="dash-search">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span>Search tasks...</span>
+              </div>
+            </div>
+            <div class="task-group">
+              <div class="epic-row">
+                <span class="epic-key">MC-400</span>
+                <span class="epic-name">Platform Performance</span>
+                <span class="epic-ct">3 tasks</span>
+              </div>
+              <div class="task-row">
+                <div class="task-chk"></div>
+                <div class="task-body">
+                  <div class="task-top"><span class="tk">MC-412</span><span class="ts">In Progress</span><span class="tp tp-high">High</span><span class="synced"></span></div>
+                  <div class="task-sum">Fix authentication timeout on token refresh</div>
+                  <div class="task-meta"><span>machine-cloud</span><span class="mono">2h est.</span><span class="due">Due Apr 2</span></div>
+                </div>
+                <button class="task-act">Reschedule</button>
+              </div>
+              <div class="task-row">
+                <div class="task-chk"></div>
+                <div class="task-body">
+                  <div class="task-top"><span class="tk">MC-389</span><span class="ts">In Review</span><span class="tp tp-med">Medium</span><span class="synced"></span></div>
+                  <div class="task-sum">Implement API rate limiter for external endpoints</div>
+                  <div class="task-meta"><span>machine-cloud</span><span class="mono">4h est.</span></div>
+                </div>
+                <button class="task-act">Reschedule</button>
+              </div>
+              <div class="task-row">
+                <div class="task-chk"></div>
+                <div class="task-body">
+                  <div class="task-top"><span class="tk">MC-415</span><span class="ts">To Do</span><span class="tp tp-med">Medium</span></div>
+                  <div class="task-sum">Add Redis cache layer for dashboard queries</div>
+                  <div class="task-meta"><span>machine-cloud</span><span class="mono">3h est.</span><span class="due">Due Apr 5</span></div>
+                </div>
+                <button class="task-act task-act--primary">Schedule</button>
+              </div>
+            </div>
+            <div class="task-group">
+              <div class="epic-row">
+                <span class="epic-key epic-key--pr">PRs</span>
+                <span class="epic-name">Pending Reviews</span>
+                <span class="epic-ct">2 reviews</span>
+              </div>
+              <div class="task-row">
+                <div class="task-chk"></div>
+                <div class="task-body">
+                  <div class="task-top"><span class="tk tk--pr">PR-27</span><span class="ts">Needs Review</span></div>
+                  <div class="task-sum">feat: database migration for user preferences</div>
+                  <div class="task-meta"><span>jaczaar/mira</span><span class="mono">1h est.</span></div>
+                </div>
+                <button class="task-act task-act--primary">Schedule</button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- RENDER: Dashboard Task List -->
-        <div class="render render-dashboard">
-          <div class="dash-header">
-            <h2 class="dash-title">Mira</h2>
-            <span class="dash-status"><span class="status-dot green"></span>Synced</span>
-            <div class="dash-actions">
-              <button class="dash-btn">Refresh</button>
-              <button class="dash-btn primary">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-                Sync to Calendar
-              </button>
-              <button class="dash-btn schedule-btn">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                Auto-Schedule
-              </button>
-            </div>
-          </div>
-          <div class="dash-toolbar">
-            <div class="dash-filters">
-              <button class="filter-pill active">All <span class="pill-count">8</span></button>
-              <button class="filter-pill">Unscheduled <span class="pill-count">3</span></button>
-              <button class="filter-pill">Scheduled <span class="pill-count">5</span></button>
-            </div>
-            <div class="dash-search">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <span class="search-placeholder">Search tasks...</span>
-            </div>
-          </div>
-
-          <!-- Epic Group -->
-          <div class="task-group">
-            <div class="epic-header">
-              <span class="epic-key">MC-400</span>
-              <span class="epic-name">Platform Performance</span>
-              <span class="epic-count">3 tasks</span>
-            </div>
-            <div class="task-row">
-              <div class="task-check"></div>
-              <div class="task-body">
-                <div class="task-top">
-                  <span class="task-key">MC-412</span>
-                  <span class="task-status">In Progress</span>
-                  <span class="task-priority high">High</span>
-                  <span class="synced-dot"></span>
-                </div>
-                <div class="task-summary">Fix authentication timeout on token refresh</div>
-                <div class="task-meta">
-                  <span>machine-cloud</span>
-                  <span class="mono">2h est.</span>
-                  <span class="due">Due Apr 2</span>
-                </div>
-              </div>
-              <button class="task-action">Reschedule</button>
-            </div>
-            <div class="task-row">
-              <div class="task-check"></div>
-              <div class="task-body">
-                <div class="task-top">
-                  <span class="task-key">MC-389</span>
-                  <span class="task-status">In Review</span>
-                  <span class="task-priority medium">Medium</span>
-                  <span class="synced-dot"></span>
-                </div>
-                <div class="task-summary">Implement API rate limiter for external endpoints</div>
-                <div class="task-meta">
-                  <span>machine-cloud</span>
-                  <span class="mono">4h est.</span>
-                </div>
-              </div>
-              <button class="task-action">Reschedule</button>
-            </div>
-            <div class="task-row">
-              <div class="task-check"></div>
-              <div class="task-body">
-                <div class="task-top">
-                  <span class="task-key">MC-415</span>
-                  <span class="task-status">To Do</span>
-                  <span class="task-priority medium">Medium</span>
-                </div>
-                <div class="task-summary">Add Redis cache layer for dashboard queries</div>
-                <div class="task-meta">
-                  <span>machine-cloud</span>
-                  <span class="mono">3h est.</span>
-                  <span class="due">Due Apr 5</span>
-                </div>
-              </div>
-              <button class="task-action primary">Schedule</button>
-            </div>
-          </div>
-
-          <!-- PR Group -->
-          <div class="task-group">
-            <div class="epic-header">
-              <span class="epic-key pr">PRs</span>
-              <span class="epic-name">Pending Reviews</span>
-              <span class="epic-count">2 reviews</span>
-            </div>
-            <div class="task-row">
-              <div class="task-check"></div>
-              <div class="task-body">
-                <div class="task-top">
-                  <span class="task-key pr-key">PR-27</span>
-                  <span class="task-status">Needs Review</span>
-                </div>
-                <div class="task-summary">feat: database migration for user preferences</div>
-                <div class="task-meta"><span>jaczaar/mira</span><span class="mono">1h est.</span></div>
-              </div>
-              <button class="task-action primary">Schedule</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Preview 3: Contribute (Edit Mode) -->
-      <div class="app-frame" id="contribute">
-        <div class="frame-chrome">
-          <div class="traffic-lights">
-            <span class="dot red"></span>
-            <span class="dot yellow"></span>
-            <span class="dot green"></span>
-          </div>
-          <div class="frame-nav">
-            <span class="frame-nav-item">Calendar</span>
-            <span class="frame-nav-item">Dashboard</span>
-            <span class="frame-nav-item active">Contribute</span>
-          </div>
-        </div>
-
-        <!-- RENDER: Edit Mode / Claude Code Chat -->
-        <div class="render render-edit">
+        <!-- Contribute View -->
+        <div class="window-body tab-panel" id="panel-contribute">
           <div class="edit-split">
-            <!-- Chat pane -->
-            <div class="chat-pane">
+            <div class="chat-side">
               <div class="chat-messages">
-                <div class="chat-msg user">
-                  <div class="msg-bubble user-bubble">Can you add a dark mode toggle to the settings page?</div>
+                <div class="msg msg-user">
+                  <div class="bubble bubble-user">Can you add a dark mode toggle to the settings page?</div>
                 </div>
-                <div class="chat-msg assistant">
-                  <div class="msg-bubble assistant-bubble">
-                    I'll add a dark mode toggle to the settings page. Let me make the changes:
-                    <div class="msg-diff">
-                      <div class="diff-header">
-                        <span class="diff-file">src/lib/components/Settings.svelte</span>
-                        <span class="diff-badge">+12 -2</span>
+                <div class="msg msg-ai">
+                  <div class="bubble bubble-ai">
+                    I'll add a dark mode toggle. Let me make the changes:
+                    <div class="diff-block">
+                      <div class="diff-top">
+                        <span class="diff-name">Settings.svelte</span>
+                        <span class="diff-stat">+12 -2</span>
                       </div>
-                      <div class="diff-lines">
+                      <div class="diff-code">
                         <div class="diff-add">+ &lt;div class="setting-row"&gt;</div>
                         <div class="diff-add">+   &lt;label&gt;Theme&lt;/label&gt;</div>
                         <div class="diff-add">+   &lt;ThemeToggle /&gt;</div>
                         <div class="diff-add">+ &lt;/div&gt;</div>
                       </div>
                     </div>
-                    Done! I've added the toggle. Want me to create a PR with these changes?
+                    Done! Want me to create a PR?
                   </div>
                 </div>
-                <div class="chat-msg user">
-                  <div class="msg-bubble user-bubble">Yes, please open a PR!</div>
+                <div class="msg msg-user">
+                  <div class="bubble bubble-user">Yes, open a PR!</div>
                 </div>
-                <div class="chat-msg assistant">
-                  <div class="msg-bubble assistant-bubble">
-                    <span class="msg-check">&#10003;</span> PR #14 created: <a class="msg-link">Add dark mode toggle to settings</a>
+                <div class="msg msg-ai">
+                  <div class="bubble bubble-ai">
+                    <span class="check-mark">&#10003;</span> PR #14 created: <span class="pr-link">Add dark mode toggle</span>
                   </div>
                 </div>
               </div>
-              <div class="chat-input">
-                <span class="chat-placeholder">Describe what you'd like to change...</span>
+              <div class="chat-bar">
+                <span class="chat-ph">Describe what you'd like to change...</span>
+                <span class="cursor-blink"></span>
               </div>
             </div>
-            <!-- Divider -->
-            <div class="edit-divider"></div>
-            <!-- Preview pane -->
-            <div class="preview-pane">
-              <div class="preview-bar">
-                <span class="preview-label">Preview</span>
+            <div class="split-divider"></div>
+            <div class="preview-side">
+              <div class="preview-top">
+                <span>Preview</span>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               </div>
-              <div class="preview-iframe">
+              <div class="preview-content">
                 <div class="preview-mock">
-                  <div class="preview-settings-header">Settings</div>
-                  <div class="preview-setting-row">
-                    <span>Jira Connection</span>
-                    <span class="preview-connected">Connected</span>
-                  </div>
-                  <div class="preview-setting-row">
-                    <span>Google Calendar</span>
-                    <span class="preview-connected">Connected</span>
-                  </div>
-                  <div class="preview-setting-row highlight">
+                  <div class="pm-title">Settings</div>
+                  <div class="pm-row"><span>Jira Connection</span><span class="pm-ok">Connected</span></div>
+                  <div class="pm-row"><span>Google Calendar</span><span class="pm-ok">Connected</span></div>
+                  <div class="pm-row pm-highlight">
                     <span>Theme</span>
-                    <div class="preview-toggle">
-                      <span class="toggle-opt">Light</span>
-                      <span class="toggle-opt active">Dark</span>
-                      <span class="toggle-opt">System</span>
+                    <div class="pm-toggle">
+                      <span>Light</span>
+                      <span class="pm-active">Dark</span>
+                      <span>System</span>
                     </div>
                   </div>
-                  <div class="preview-setting-row">
-                    <span>Sync Frequency</span>
-                    <span class="preview-value">Hourly</span>
-                  </div>
+                  <div class="pm-row"><span>Sync Frequency</span><span class="pm-val">Hourly</span></div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- Contribute Section -->
-  <section class="contribute-section">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-tag">Open Source</span>
-        <h2>Everyone is a developer.<br /><span class="gradient-text">No coding required.</span></h2>
-        <p class="section-desc">
-          Mira has a built-in Claude Code chatbot. Describe what you want to change in plain English,
-          review the diff, and submit a PR — all from inside the app. You don't need to know how to code.
-        </p>
-      </div>
-      <div class="contribute-grid">
-        <div class="contribute-card">
-          <div class="contribute-step">01</div>
-          <h3>Describe</h3>
-          <p>Tell Claude what you'd like to change — a new feature, a bug fix, a UI tweak. Use your own words.</p>
-        </div>
-        <div class="contribute-card">
-          <div class="contribute-step">02</div>
-          <h3>Review</h3>
-          <p>See the exact code changes in a diff viewer. The live preview updates in real time so you can verify.</p>
-        </div>
-        <div class="contribute-card">
-          <div class="contribute-step">03</div>
-          <h3>Ship</h3>
-          <p>One click creates a pull request on GitHub. The maintainer reviews and merges — your contribution is live.</p>
         </div>
       </div>
     </div>
@@ -407,58 +293,89 @@
   <!-- Features -->
   <section class="features" id="features">
     <div class="container">
-      <div class="section-header">
-        <span class="section-tag">Features</span>
-        <h2>One app for your<br />entire workweek.</h2>
-      </div>
-      <div class="feature-grid">
-        <div class="feature-card">
-          <div class="feature-icon blue">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <div class="features-list">
+        <div class="feat reveal">
+          <div class="feat-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           </div>
-          <h3>Auto-Schedule</h3>
-          <p>Hit one button and Mira slots your tasks around existing events by priority and deadline. Preview before applying.</p>
+          <div class="feat-text">
+            <h3>Auto-Schedule</h3>
+            <p>One click slots tasks around your existing calendar by priority and deadline.</p>
+          </div>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon purple">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <div class="feat reveal">
+          <div class="feat-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </div>
-          <h3>Calendar Sync</h3>
-          <p>Two-way Google Calendar sync with per-event colors, multi-slot scheduling, and Jira worklog creation.</p>
+          <div class="feat-text">
+            <h3>Two-way Calendar Sync</h3>
+            <p>Google Calendar with color-coded events and automatic Jira worklog creation.</p>
+          </div>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon green">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <div class="feat reveal">
+          <div class="feat-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           </div>
-          <h3>Jira + GitHub</h3>
-          <p>Pull assigned Jira tasks and GitHub PRs needing your review. Filter by status, group by epic, schedule review time.</p>
+          <div class="feat-text">
+            <h3>Jira + GitHub</h3>
+            <p>Pull assigned tasks and PRs needing review. Filter, group by epic, schedule.</p>
+          </div>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon amber">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div class="feat reveal">
+          <div class="feat-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           </div>
-          <h3>Private by Design</h3>
-          <p>Built with Tauri and Rust. Your data stays on your machine — tokens stored in your system keyring, not the cloud.</p>
+          <div class="feat-text">
+            <h3>Private by Design</h3>
+            <p>Tauri + Rust. Data stays on your machine, tokens in your system keyring.</p>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Built with -->
-  <section class="built-with">
+  <!-- Contribute -->
+  <section class="contribute">
     <div class="container">
-      <div class="tech-row">
-        <span class="tech-pill">Svelte 5</span>
-        <span class="tech-divider">/</span>
-        <span class="tech-pill">Rust</span>
-        <span class="tech-divider">/</span>
-        <span class="tech-pill">Tauri 2</span>
-        <span class="tech-divider">/</span>
-        <span class="tech-pill">macOS</span>
-        <span class="tech-divider">/</span>
-        <span class="tech-pill">Windows</span>
-        <span class="tech-divider">/</span>
-        <span class="tech-pill">Linux</span>
+      <div class="contribute-header reveal">
+        <span class="label">Open Source</span>
+        <h2>Ship features without writing code.</h2>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <span class="step-n">01</span>
+          <h3>Describe</h3>
+          <p>Tell the AI what to change in plain English.</p>
+        </div>
+        <div class="step reveal">
+          <span class="step-n">02</span>
+          <h3>Review</h3>
+          <p>See the diff and live preview before anything ships.</p>
+        </div>
+        <div class="step reveal">
+          <span class="step-n">03</span>
+          <h3>Ship</h3>
+          <p>One click creates a PR on GitHub.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech -->
+  <section class="tech">
+    <div class="container">
+      <div class="tech-row reveal">
+        <span>Svelte 5</span>
+        <span class="sep">/</span>
+        <span>Rust</span>
+        <span class="sep">/</span>
+        <span>Tauri 2</span>
+        <span class="sep">/</span>
+        <span>macOS</span>
+        <span class="sep">/</span>
+        <span>Windows</span>
+        <span class="sep">/</span>
+        <span>Linux</span>
       </div>
     </div>
   </section>
@@ -466,36 +383,24 @@
   <!-- Download -->
   <section class="download" id="download">
     <div class="container">
-      <div class="download-card">
-        <h2>Download Mira</h2>
-        <p>Free and open-source. Available on all platforms.</p>
-        <div class="download-buttons">
-          <a href="https://github.com/jaczaar/mira/releases/latest/download/Mira_0.2.0_aarch64.dmg" class="btn btn-primary btn-lg">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-            macOS (Apple Silicon)
-          </a>
-          <a href="https://github.com/jaczaar/mira/releases/latest/download/Mira_0.2.0_x64.dmg" class="btn btn-secondary btn-lg">
-            macOS (Intel)
-          </a>
-          <a href="https://github.com/jaczaar/mira/releases/latest/download/Mira_0.2.0_x64-setup.exe" class="btn btn-secondary btn-lg">
-            Windows
-          </a>
-          <a href="https://github.com/jaczaar/mira/releases/latest/download/Mira_0.2.0_amd64.AppImage" class="btn btn-secondary btn-lg">
-            Linux
-          </a>
-        </div>
-        <p class="download-note">
-          Or browse all releases on <a href="https://github.com/jaczaar/mira/releases" target="_blank" rel="noopener">GitHub Releases</a>.
-        </p>
+      <h2 class="dl-title reveal">Download Mira</h2>
+      <div class="dl-buttons reveal">
+        <a href="https://github.com/jaczaar/mira/releases/latest/download/Mira_0.2.0_aarch64.dmg" class="btn-main btn-lg">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          macOS (Apple Silicon)
+        </a>
+        <a href="https://github.com/jaczaar/mira/releases/latest/download/Mira_0.2.0_x64.dmg" class="btn-ghost btn-lg">macOS (Intel)</a>
+        <a href="https://github.com/jaczaar/mira/releases/latest/download/Mira_0.2.0_x64-setup.exe" class="btn-ghost btn-lg">Windows</a>
+        <a href="https://github.com/jaczaar/mira/releases/latest/download/Mira_0.2.0_amd64.AppImage" class="btn-ghost btn-lg">Linux</a>
       </div>
+      <p class="dl-note reveal">Or browse <a href="https://github.com/jaczaar/mira/releases" target="_blank" rel="noopener">all releases</a>.</p>
     </div>
   </section>
 
-  <!-- Footer -->
   <footer class="footer">
     <div class="container footer-inner">
       <div class="footer-brand">
-        <span class="brand-icon sm">M</span>
+        <span class="brand-mark sm">M</span>
         <span>Mira</span>
       </div>
       <div class="footer-links">
@@ -503,9 +408,53 @@
         <a href="https://github.com/jaczaar/mira/releases" target="_blank" rel="noopener">Releases</a>
         <a href="https://github.com/jaczaar/mira/issues" target="_blank" rel="noopener">Issues</a>
       </div>
-      <p class="footer-copy">Built by Jacques Zaarour</p>
     </div>
   </footer>
+
+  <script>
+    // Tab switcher
+    const tabs = document.querySelectorAll('#appTabs .tab');
+    const panels = document.querySelectorAll('.tab-panel');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        tabs.forEach(t => t.classList.remove('active'));
+        panels.forEach(p => {
+          p.classList.remove('active');
+          p.style.display = 'none';
+        });
+        tab.classList.add('active');
+        const panel = document.getElementById('panel-' + target);
+        panel.style.display = '';
+        // Trigger reflow for animation
+        void panel.offsetHeight;
+        panel.classList.add('active');
+      });
+    });
+
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('visible');
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -60px 0px' });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Nav scroll
+    const nav = document.getElementById('nav');
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          nav.classList.toggle('scrolled', window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+  </script>
 
 </body>
 </html>

@@ -25,41 +25,48 @@
 
 ## Future Phases
 
-### Phase 3: Schedule Windows
+### Phase 3: GitHub Integration
+
+- Pull GitHub PRs requiring review (assigned or review-requested)
+- Display PRs on dashboard alongside Jira tasks
+- Schedule PR review time on Google Calendar
+- Link to PR diff viewer from dashboard
+
+### Phase 4: Schedule Windows
 
 - Define time boundaries: Work Hours, Personal Hours, Focus Time, No-Meeting Time
 - Per-window-type task filtering (focus work only during focus time)
 - Visual weekly grid editor in Settings
 
-### Phase 4: Task Chunking
+### Phase 5: Task Chunking
 
 - Split large tasks (>2h) into multiple blocks across days
 - Configurable max chunk size (default: 2 hours)
 - Spread chunks across days to avoid fatigue
 - Track chunk → parent task relationships
 
-### Phase 5: Focus Bar ("What to Work On Now")
+### Phase 6: Focus Bar ("What to Work On Now")
 
 - Amber bar at top of dashboard showing current scheduled task
 - Shows: task key, summary, time remaining, progress bar
 - Actions: Start (open Jira), Snooze 15m, Skip
 - When idle: shows next upcoming task
 
-### Phase 6: Dynamic Rescheduling
+### Phase 7: Dynamic Rescheduling
 
 - "Took longer" / "Done early" actions on Focus Bar
 - Full reschedule triggered on state change
-- Preserve manually pinned events
+- Preserve manually pinned events 
 - Smart reshuffling for remaining day/week
 
-### Phase 7: Advanced Task Management
+### Phase 8: Advanced Task Management
 
 - Recurring tasks with repeat patterns
 - Task dependencies (A must finish before B)
 - Kanban / list view toggle
 - Drag-and-drop task reordering
 
-### Phase 8: LLM-Powered Priority Scoring
+### Phase 9: LLM-Powered Priority Scoring
 
 - Hook priority scoring into an LLM for smarter scheduling
 - Context-aware prioritization based on project state
