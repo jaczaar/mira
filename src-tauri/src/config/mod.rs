@@ -66,6 +66,9 @@ pub struct AppConfig {
     pub enabled_calendars: Vec<String>,
     // Calendar zoom level index (into ZOOM_STEPS array)
     pub calendar_zoom: Option<u8>,
+    // Calendar day range (hours)
+    pub day_start_hour: Option<u8>,
+    pub day_end_hour: Option<u8>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

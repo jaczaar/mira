@@ -118,15 +118,24 @@
   }
 
 
-  const START_HOUR = 5;
-  const END_HOUR = 23.5; // 11:30 PM
-  const GRID_OFFSET = 15; // start 15 min before the hour (4:45) so labels aren't cut off
-  const HOURS = Array.from({ length: 18 }, (_, i) => i + START_HOUR); // 5 AM through 10 PM labels
-  const ZOOM_STEPS = [44, 48, 52, 56, 60, 66, 72, 80, 90, 100, 112, 126, 144];
-  let zoomIndex = $state(4); // default 60px
-  const HOUR_HEIGHT = $derived(ZOOM_STEPS[zoomIndex]);
+  const GRID_OFFSET = 15; // start 15 min before the first hour so labels aren't cut off
+  const FIXED_ZOOM_STEPS = [44, 48, 52, 56, 60, 66, 72, 80, 90, 100, 112, 126, 144];
+
+  // Day range from config (persisted)
+  const startHour = $derived($config.day_start_hour ?? 6);
+  const endHour = $derived($config.day_end_hour ?? 23);
+  const HOURS = $derived(Array.from({ length: endHour - startHour }, (_, i) => i + startHour));
+  const totalHours = $derived(endHour - startHour);
+
+  // Auto-fit zoom: smallest level fills the container without scrolling
+  let gridHeight = $state(600); // measured from DOM
+  const autoFitZoom = $derived(Math.floor((gridHeight - GRID_OFFSET) / (totalHours + GRID_OFFSET / 60)));
+  const ZOOM_STEPS = $derived([autoFitZoom, ...FIXED_ZOOM_STEPS.filter(s => s > autoFitZoom)]);
+
+  let zoomIndex = $state(3); // will be corrected on mount
+  const HOUR_HEIGHT = $derived(ZOOM_STEPS[Math.min(zoomIndex, ZOOM_STEPS.length - 1)]);
   const nowMinutesCurrent = $derived(now.getHours() * 60 + now.getMinutes());
-  const nowTopPx = $derived(((nowMinutesCurrent - START_HOUR * 60) / 60) * HOUR_HEIGHT + (HOUR_HEIGHT * GRID_OFFSET / 60));
+  const nowTopPx = $derived(((nowMinutesCurrent - startHour * 60) / 60) * HOUR_HEIGHT + (HOUR_HEIGHT * GRID_OFFSET / 60));
 
   function zoomIn() {
     if (zoomIndex < ZOOM_STEPS.length - 1) {
@@ -223,13 +232,13 @@
 
     if (startStr !== dayStr && endStr !== dayStr) return null;
 
-    const startMinutes = startStr === dayStr ? start.getHours() * 60 + start.getMinutes() : START_HOUR * 60;
-    const endMinutes = endStr === dayStr ? end.getHours() * 60 + end.getMinutes() : END_HOUR * 60;
-    const clampedStart = Math.max(startMinutes, START_HOUR * 60);
-    const clampedEnd = Math.min(endMinutes, END_HOUR * 60);
+    const startMinutes = startStr === dayStr ? start.getHours() * 60 + start.getMinutes() : startHour * 60;
+    const endMinutes = endStr === dayStr ? end.getHours() * 60 + end.getMinutes() : endHour * 60;
+    const clampedStart = Math.max(startMinutes, startHour * 60);
+    const clampedEnd = Math.min(endMinutes, endHour * 60);
     const durationMinutes = Math.max(clampedEnd - clampedStart, 15);
 
-    const top = ((clampedStart - START_HOUR * 60) / 60) * HOUR_HEIGHT + 1;
+    const top = ((clampedStart - startHour * 60) / 60) * HOUR_HEIGHT + (HOUR_HEIGHT * GRID_OFFSET / 60) + 1;
     const height = (durationMinutes / 60) * HOUR_HEIGHT - 2;
 
     return { top: `${top}px`, height: `${height}px` };
@@ -553,6 +562,21 @@
               <p class="connect-error">{connectError}</p>
             {/if}
             <div class="filter-divider"></div>
+            <div class="day-range-row">
+              <span class="day-range-label">Day range</span>
+              <select class="day-range-select" value={startHour} onchange={(e) => saveConfig({ ...$config, day_start_hour: +e.currentTarget.value })}>
+                {#each Array.from({ length: 12 }, (_, i) => i) as h}
+                  <option value={h}>{formatHour(h)}</option>
+                {/each}
+              </select>
+              <span class="day-range-sep">–</span>
+              <select class="day-range-select" value={endHour} onchange={(e) => saveConfig({ ...$config, day_end_hour: +e.currentTarget.value })}>
+                {#each Array.from({ length: 12 }, (_, i) => i + 13) as h}
+                  <option value={h}>{formatHour(h)}</option>
+                {/each}
+              </select>
+            </div>
+            <div class="filter-divider"></div>
             <div class="theme-row">
               <button class="theme-pill" class:active={$themeMode === "light"} onclick={() => setTheme("light")} title="Light">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -660,7 +684,7 @@
         </div>
       {/if}
 
-      <div class="grid-body">
+      <div class="grid-body" bind:clientHeight={gridHeight}>
         <div class="time-gutter" style="padding-top: {HOUR_HEIGHT * GRID_OFFSET / 60}px">
           {#each HOURS as hour}
             <div class="time-label" style="height: {HOUR_HEIGHT}px">
@@ -676,7 +700,7 @@
                 <div class="hour-slot" style="height: {HOUR_HEIGHT}px"></div>
               {/each}
 
-              {#if nowMinutesCurrent >= START_HOUR * 60 && nowMinutesCurrent <= END_HOUR * 60}
+              {#if nowMinutesCurrent >= startHour * 60 && nowMinutesCurrent <= endHour * 60}
                 {#if isToday(day)}
                   <div class="now-line" style="top: {nowTopPx}px">
                     <span class="now-dot"></span>
@@ -793,6 +817,36 @@
 
   .cal-dot.on {
     background: var(--accent-blue);
+  }
+
+  .day-range-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+  }
+
+  .day-range-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    margin-right: auto;
+  }
+
+  .day-range-select {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 3px 6px;
+    cursor: pointer;
+  }
+
+  .day-range-sep {
+    font-size: 11px;
+    color: var(--text-tertiary);
   }
 
   .theme-row {

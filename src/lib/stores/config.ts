@@ -25,6 +25,8 @@ export interface AppConfig {
   account_schedule_windows: Record<string, ScheduleWindow>;
   enabled_calendars: string[];
   calendar_zoom: number | null;
+  day_start_hour: number | null;
+  day_end_hour: number | null;
 }
 
 const defaultConfig: AppConfig = {
@@ -49,6 +51,8 @@ const defaultConfig: AppConfig = {
   account_schedule_windows: {},
   enabled_calendars: [],
   calendar_zoom: null,
+  day_start_hour: null,
+  day_end_hour: null,
 };
 
 export const config = writable<AppConfig>(defaultConfig);
