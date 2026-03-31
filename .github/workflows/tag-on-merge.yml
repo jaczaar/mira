@@ -15,6 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Get current version and compute next
         id: version
@@ -36,21 +37,9 @@ jobs:
           echo "tag=v$NEXT" >> "$GITHUB_OUTPUT"
           echo "Bumping $LATEST_TAG -> v$NEXT"
 
-      - name: Update version in package.json and tauri.conf.json
-        run: |
-          NEXT=${{ steps.version.outputs.next }}
-          # Update package.json
-          jq --arg v "$NEXT" '.version = $v' package.json > tmp.json && mv tmp.json package.json
-          # Update tauri.conf.json
-          jq --arg v "$NEXT" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
-          # Update Cargo.toml version line
-          sed -i "s/^version = \".*\"/version = \"$NEXT\"/" src-tauri/Cargo.toml
-
-      - name: Commit, tag, and push
+      - name: Create tag and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
-          git commit -m "bump to ${{ steps.version.outputs.tag }} [auto-release]"
           git tag "${{ steps.version.outputs.tag }}"
-          git push origin main --tags
+          git push origin "${{ steps.version.outputs.tag }}"
