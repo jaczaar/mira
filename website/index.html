@@ -3,10 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mira — Auto-scheduling for developers</title>
-  <meta name="description" content="Auto-schedule your Jira tasks and GitHub PRs onto Google Calendar. Anyone can contribute — no coding required." />
-  <meta name="theme-color" content="#272730" />
+  <title>Mira — Open-source auto-scheduling for developers</title>
+  <meta name="description" content="Auto-schedule Jira tasks and GitHub PRs onto Google Calendar. Contribute features in plain English — no coding required. Free and open-source." />
+  <meta name="theme-color" content="#0c0c14" />
   <link rel="icon" type="image/png" href="icon.png" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Mira — Open-source auto-scheduling for developers" />
+  <meta property="og:description" content="Auto-schedule Jira tasks and GitHub PRs onto Google Calendar. Anyone can contribute — no coding required." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mira.jaczaar.com" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,10 +22,12 @@
 </head>
 <body>
 
-  <div class="ambient-glow"></div>
+  <!-- Ambient background -->
+  <div class="ambient-bg"></div>
+  <div class="grid-pattern"></div>
 
   <!-- Nav -->
-  <nav class="nav">
+  <nav class="nav" id="nav">
     <div class="nav-inner">
       <a href="#" class="nav-brand">
         <span class="brand-icon">M</span>
@@ -28,7 +36,10 @@
       <div class="nav-links">
         <a href="#features">Features</a>
         <a href="#contribute">Contribute</a>
-        <a href="https://github.com/jaczaar/mira" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/jaczaar/mira" target="_blank" rel="noopener" class="nav-github" aria-label="Star Mira on GitHub">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          Star
+        </a>
         <a href="#download" class="nav-cta">Download</a>
       </div>
     </div>
@@ -39,24 +50,39 @@
     <div class="container">
       <div class="hero-badge">
         <span class="badge-dot"></span>
-        Open Source — Everyone Can Contribute
+        Open Source &mdash; Anyone Can Contribute
       </div>
       <h1 class="hero-title">
-        Your calendar,<br />
-        <span class="gradient-text">on autopilot.</span>
+        Ship features<br />
+        <span class="gradient-text">without writing code.</span>
       </h1>
       <p class="hero-subtitle">
-        Mira auto-schedules your Jira tasks, GitHub PRs, and Google Calendar events.
-        Built by its own community — anyone can improve it, no coding required.
+        Mira auto-schedules your Jira tasks and GitHub PRs onto Google Calendar.
+        Its built-in AI chatbot lets anyone contribute &mdash; describe what you want
+        in plain English, and it ships a PR for you.
       </p>
       <div class="hero-actions">
         <a href="#download" class="btn btn-primary">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Download for Free
         </a>
         <a href="#contribute" class="btn btn-secondary">
-          Learn How to Contribute
+          See How It Works
         </a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-value">100%</span>
+          <span class="stat-label">Open Source</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">0</span>
+          <span class="stat-label">Lines of Code Needed</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">3</span>
+          <span class="stat-label">Platforms</span>
+        </div>
       </div>
     </div>
   </section>
@@ -65,8 +91,12 @@
   <section class="previews">
     <div class="container">
 
-      <!-- Preview 1: Calendar -->
-      <div class="app-frame">
+      <!-- Preview 1: Contribute (Edit Mode) — FEATURED -->
+      <div class="app-frame featured reveal-scale" id="contribute">
+        <div class="featured-label">
+          <span class="star">&#9733;</span>
+          The contribution experience &mdash; no coding required
+        </div>
         <div class="frame-chrome">
           <div class="traffic-lights">
             <span class="dot red"></span>
@@ -75,12 +105,104 @@
           </div>
           <div class="frame-nav">
             <span class="frame-nav-item">Calendar</span>
-            <span class="frame-nav-item active">Dashboard</span>
+            <span class="frame-nav-item">Dashboard</span>
+            <span class="frame-nav-item active">Contribute</span>
+          </div>
+        </div>
+
+        <div class="render render-edit">
+          <div class="edit-split">
+            <!-- Chat pane -->
+            <div class="chat-pane">
+              <div class="chat-messages">
+                <div class="chat-msg user">
+                  <div class="msg-bubble user-bubble">Can you add a dark mode toggle to the settings page?</div>
+                </div>
+                <div class="chat-msg assistant">
+                  <div class="msg-bubble assistant-bubble">
+                    I'll add a dark mode toggle to the settings page. Let me make the changes:
+                    <div class="msg-diff">
+                      <div class="diff-header">
+                        <span class="diff-file">src/lib/components/Settings.svelte</span>
+                        <span class="diff-badge">+12 -2</span>
+                      </div>
+                      <div class="diff-lines">
+                        <div class="diff-add">+ &lt;div class="setting-row"&gt;</div>
+                        <div class="diff-add">+   &lt;label&gt;Theme&lt;/label&gt;</div>
+                        <div class="diff-add">+   &lt;ThemeToggle /&gt;</div>
+                        <div class="diff-add">+ &lt;/div&gt;</div>
+                      </div>
+                    </div>
+                    Done! I've added the toggle. Want me to create a PR with these changes?
+                  </div>
+                </div>
+                <div class="chat-msg user">
+                  <div class="msg-bubble user-bubble">Yes, please open a PR!</div>
+                </div>
+                <div class="chat-msg assistant">
+                  <div class="msg-bubble assistant-bubble">
+                    <span class="msg-check">&#10003;</span> PR #14 created: <a class="msg-link">Add dark mode toggle to settings</a>
+                  </div>
+                </div>
+              </div>
+              <div class="chat-input">
+                <span class="chat-placeholder">Describe what you'd like to change...</span>
+                <span class="chat-cursor"></span>
+              </div>
+            </div>
+            <!-- Divider -->
+            <div class="edit-divider"></div>
+            <!-- Preview pane -->
+            <div class="preview-pane">
+              <div class="preview-bar">
+                <span class="preview-label">Preview</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </div>
+              <div class="preview-iframe">
+                <div class="preview-mock">
+                  <div class="preview-settings-header">Settings</div>
+                  <div class="preview-setting-row">
+                    <span>Jira Connection</span>
+                    <span class="preview-connected">Connected</span>
+                  </div>
+                  <div class="preview-setting-row">
+                    <span>Google Calendar</span>
+                    <span class="preview-connected">Connected</span>
+                  </div>
+                  <div class="preview-setting-row highlight">
+                    <span>Theme</span>
+                    <div class="preview-toggle">
+                      <span class="toggle-opt">Light</span>
+                      <span class="toggle-opt active">Dark</span>
+                      <span class="toggle-opt">System</span>
+                    </div>
+                  </div>
+                  <div class="preview-setting-row">
+                    <span>Sync Frequency</span>
+                    <span class="preview-value">Hourly</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview 2: Calendar -->
+      <div class="app-frame reveal-scale">
+        <div class="frame-chrome">
+          <div class="traffic-lights">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="frame-nav">
+            <span class="frame-nav-item active">Calendar</span>
+            <span class="frame-nav-item">Dashboard</span>
             <span class="frame-nav-item">Contribute</span>
           </div>
         </div>
 
-        <!-- RENDER: Calendar Week View -->
         <div class="render render-calendar">
           <div class="cal-toolbar">
             <div class="cal-toolbar-left">
@@ -149,8 +271,8 @@
         </div>
       </div>
 
-      <!-- Preview 2: Dashboard -->
-      <div class="app-frame">
+      <!-- Preview 3: Dashboard -->
+      <div class="app-frame reveal-scale">
         <div class="frame-chrome">
           <div class="traffic-lights">
             <span class="dot red"></span>
@@ -158,13 +280,12 @@
             <span class="dot green"></span>
           </div>
           <div class="frame-nav">
-            <span class="frame-nav-item active">Calendar</span>
-            <span class="frame-nav-item">Dashboard</span>
+            <span class="frame-nav-item">Calendar</span>
+            <span class="frame-nav-item active">Dashboard</span>
             <span class="frame-nav-item">Contribute</span>
           </div>
         </div>
 
-        <!-- RENDER: Dashboard Task List -->
         <div class="render render-dashboard">
           <div class="dash-header">
             <h2 class="dash-title">Mira</h2>
@@ -277,128 +398,35 @@
         </div>
       </div>
 
-      <!-- Preview 3: Contribute (Edit Mode) -->
-      <div class="app-frame" id="contribute">
-        <div class="frame-chrome">
-          <div class="traffic-lights">
-            <span class="dot red"></span>
-            <span class="dot yellow"></span>
-            <span class="dot green"></span>
-          </div>
-          <div class="frame-nav">
-            <span class="frame-nav-item">Calendar</span>
-            <span class="frame-nav-item">Dashboard</span>
-            <span class="frame-nav-item active">Contribute</span>
-          </div>
-        </div>
-
-        <!-- RENDER: Edit Mode / Claude Code Chat -->
-        <div class="render render-edit">
-          <div class="edit-split">
-            <!-- Chat pane -->
-            <div class="chat-pane">
-              <div class="chat-messages">
-                <div class="chat-msg user">
-                  <div class="msg-bubble user-bubble">Can you add a dark mode toggle to the settings page?</div>
-                </div>
-                <div class="chat-msg assistant">
-                  <div class="msg-bubble assistant-bubble">
-                    I'll add a dark mode toggle to the settings page. Let me make the changes:
-                    <div class="msg-diff">
-                      <div class="diff-header">
-                        <span class="diff-file">src/lib/components/Settings.svelte</span>
-                        <span class="diff-badge">+12 -2</span>
-                      </div>
-                      <div class="diff-lines">
-                        <div class="diff-add">+ &lt;div class="setting-row"&gt;</div>
-                        <div class="diff-add">+   &lt;label&gt;Theme&lt;/label&gt;</div>
-                        <div class="diff-add">+   &lt;ThemeToggle /&gt;</div>
-                        <div class="diff-add">+ &lt;/div&gt;</div>
-                      </div>
-                    </div>
-                    Done! I've added the toggle. Want me to create a PR with these changes?
-                  </div>
-                </div>
-                <div class="chat-msg user">
-                  <div class="msg-bubble user-bubble">Yes, please open a PR!</div>
-                </div>
-                <div class="chat-msg assistant">
-                  <div class="msg-bubble assistant-bubble">
-                    <span class="msg-check">&#10003;</span> PR #14 created: <a class="msg-link">Add dark mode toggle to settings</a>
-                  </div>
-                </div>
-              </div>
-              <div class="chat-input">
-                <span class="chat-placeholder">Describe what you'd like to change...</span>
-              </div>
-            </div>
-            <!-- Divider -->
-            <div class="edit-divider"></div>
-            <!-- Preview pane -->
-            <div class="preview-pane">
-              <div class="preview-bar">
-                <span class="preview-label">Preview</span>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              </div>
-              <div class="preview-iframe">
-                <div class="preview-mock">
-                  <div class="preview-settings-header">Settings</div>
-                  <div class="preview-setting-row">
-                    <span>Jira Connection</span>
-                    <span class="preview-connected">Connected</span>
-                  </div>
-                  <div class="preview-setting-row">
-                    <span>Google Calendar</span>
-                    <span class="preview-connected">Connected</span>
-                  </div>
-                  <div class="preview-setting-row highlight">
-                    <span>Theme</span>
-                    <div class="preview-toggle">
-                      <span class="toggle-opt">Light</span>
-                      <span class="toggle-opt active">Dark</span>
-                      <span class="toggle-opt">System</span>
-                    </div>
-                  </div>
-                  <div class="preview-setting-row">
-                    <span>Sync Frequency</span>
-                    <span class="preview-value">Hourly</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div>
   </section>
 
   <!-- Contribute Section -->
   <section class="contribute-section">
     <div class="container">
-      <div class="section-header">
+      <div class="section-header reveal">
         <span class="section-tag">Open Source</span>
         <h2>Everyone is a developer.<br /><span class="gradient-text">No coding required.</span></h2>
         <p class="section-desc">
-          Mira has a built-in Claude Code chatbot. Describe what you want to change in plain English,
-          review the diff, and submit a PR — all from inside the app. You don't need to know how to code.
+          Mira ships with a built-in Claude Code chatbot. Describe what you want to change
+          in plain English, review the diff, and submit a pull request &mdash; all from inside the app.
         </p>
       </div>
       <div class="contribute-grid">
-        <div class="contribute-card">
+        <div class="contribute-card reveal reveal-delay-1">
           <div class="contribute-step">01</div>
           <h3>Describe</h3>
-          <p>Tell Claude what you'd like to change — a new feature, a bug fix, a UI tweak. Use your own words.</p>
+          <p>Tell the AI chatbot what you'd like to change &mdash; a new feature, a bug fix, a UI tweak. Use your own words, in any language.</p>
         </div>
-        <div class="contribute-card">
+        <div class="contribute-card reveal reveal-delay-2">
           <div class="contribute-step">02</div>
           <h3>Review</h3>
-          <p>See the exact code changes in a diff viewer. The live preview updates in real time so you can verify.</p>
+          <p>See the exact code changes in a diff viewer. The live preview updates in real time so you can verify before anything ships.</p>
         </div>
-        <div class="contribute-card">
+        <div class="contribute-card reveal reveal-delay-3">
           <div class="contribute-step">03</div>
           <h3>Ship</h3>
-          <p>One click creates a pull request on GitHub. The maintainer reviews and merges — your contribution is live.</p>
+          <p>One click creates a pull request on GitHub. The maintainer reviews and merges &mdash; your contribution goes live.</p>
         </div>
       </div>
     </div>
@@ -407,39 +435,53 @@
   <!-- Features -->
   <section class="features" id="features">
     <div class="container">
-      <div class="section-header">
+      <div class="section-header reveal">
         <span class="section-tag">Features</span>
         <h2>One app for your<br />entire workweek.</h2>
       </div>
       <div class="feature-grid">
-        <div class="feature-card">
+        <div class="feature-card reveal reveal-delay-1">
           <div class="feature-icon blue">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           </div>
           <h3>Auto-Schedule</h3>
           <p>Hit one button and Mira slots your tasks around existing events by priority and deadline. Preview before applying.</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card reveal reveal-delay-2">
           <div class="feature-icon purple">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </div>
           <h3>Calendar Sync</h3>
-          <p>Two-way Google Calendar sync with per-event colors, multi-slot scheduling, and Jira worklog creation.</p>
+          <p>Two-way Google Calendar sync with per-event colors, multi-slot scheduling, and automatic Jira worklog creation.</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card reveal reveal-delay-3">
           <div class="feature-icon green">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           </div>
           <h3>Jira + GitHub</h3>
-          <p>Pull assigned Jira tasks and GitHub PRs needing your review. Filter by status, group by epic, schedule review time.</p>
+          <p>Pull assigned Jira tasks and GitHub PRs needing your review. Filter by status, group by epic, and schedule review time.</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card reveal reveal-delay-4">
           <div class="feature-icon amber">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           </div>
           <h3>Private by Design</h3>
-          <p>Built with Tauri and Rust. Your data stays on your machine — tokens stored in your system keyring, not the cloud.</p>
+          <p>Built with Tauri and Rust. Your data stays on your machine &mdash; tokens stored in your system keyring, never in the cloud.</p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quote -->
+  <section class="quote-section">
+    <div class="container">
+      <div class="quote-card reveal-scale">
+        <div class="quote-mark">&ldquo;</div>
+        <p class="quote-text">
+          I've never written a line of code, but I shipped three features to Mira last week.
+          I just described what I wanted and the AI did the rest.
+        </p>
+        <p class="quote-author">&mdash; The vision behind Mira's contribution model</p>
       </div>
     </div>
   </section>
@@ -447,7 +489,7 @@
   <!-- Built with -->
   <section class="built-with">
     <div class="container">
-      <div class="tech-row">
+      <div class="tech-row reveal">
         <span class="tech-pill">Svelte 5</span>
         <span class="tech-divider">/</span>
         <span class="tech-pill">Rust</span>
@@ -466,9 +508,9 @@
   <!-- Download -->
   <section class="download" id="download">
     <div class="container">
-      <div class="download-card">
+      <div class="download-card reveal-scale">
         <h2>Download Mira</h2>
-        <p>Free and open-source. Available on all platforms.</p>
+        <p>Free, open-source, and private. Available on all platforms.</p>
         <div class="download-buttons">
           <a href="https://github.com/jaczaar/mira/releases/latest/download/Mira_0.2.0_aarch64.dmg" class="btn btn-primary btn-lg">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
@@ -506,6 +548,33 @@
       <p class="footer-copy">Built by Jacques Zaarour</p>
     </div>
   </footer>
+
+  <!-- Minimal JS: scroll animations + nav state -->
+  <script>
+    // Scroll-triggered reveal animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.reveal, .reveal-scale').forEach(el => observer.observe(el));
+
+    // Nav scroll state
+    const nav = document.getElementById('nav');
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          nav.classList.toggle('scrolled', window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+  </script>
 
 </body>
 </html>
