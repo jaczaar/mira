@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mira — Auto-scheduling for developers</title>
-  <meta name="description" content="Auto-schedule your Jira tasks and GitHub PRs onto Google Calendar. Desktop app for macOS, Windows, and Linux." />
+  <meta name="description" content="Auto-schedule your Jira tasks and GitHub PRs onto Google Calendar. Anyone can contribute — no coding required." />
   <meta name="theme-color" content="#272730" />
   <link rel="icon" type="image/png" href="icon.png" />
 
@@ -27,6 +27,7 @@
       </a>
       <div class="nav-links">
         <a href="#features">Features</a>
+        <a href="#contribute">Contribute</a>
         <a href="https://github.com/jaczaar/mira" target="_blank" rel="noopener">GitHub</a>
         <a href="#download" class="nav-cta">Download</a>
       </div>
@@ -38,32 +39,33 @@
     <div class="container">
       <div class="hero-badge">
         <span class="badge-dot"></span>
-        v0.2 — Auto-Scheduler
+        Open Source — Everyone Can Contribute
       </div>
       <h1 class="hero-title">
         Your calendar,<br />
         <span class="gradient-text">on autopilot.</span>
       </h1>
       <p class="hero-subtitle">
-        Mira pulls your Jira tasks, GitHub PRs, and Google Calendar into one place —
-        then auto-schedules everything so you can focus on the work, not the planning.
+        Mira auto-schedules your Jira tasks, GitHub PRs, and Google Calendar events.
+        Built by its own community — anyone can improve it, no coding required.
       </p>
       <div class="hero-actions">
         <a href="#download" class="btn btn-primary">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Download for Free
         </a>
-        <a href="https://github.com/jaczaar/mira" target="_blank" rel="noopener" class="btn btn-secondary">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-          View Source
+        <a href="#contribute" class="btn btn-secondary">
+          Learn How to Contribute
         </a>
       </div>
     </div>
   </section>
 
-  <!-- App Preview Frame -->
-  <section class="preview">
+  <!-- ============ APP PREVIEWS ============ -->
+  <section class="previews">
     <div class="container">
+
+      <!-- Preview 1: Calendar -->
       <div class="app-frame">
         <div class="frame-chrome">
           <div class="traffic-lights">
@@ -71,9 +73,333 @@
             <span class="dot yellow"></span>
             <span class="dot green"></span>
           </div>
-          <span class="frame-title">Mira</span>
+          <div class="frame-nav">
+            <span class="frame-nav-item">Calendar</span>
+            <span class="frame-nav-item active">Dashboard</span>
+            <span class="frame-nav-item">Contribute</span>
+          </div>
         </div>
-        <img src="app-screenshot.png" alt="Mira calendar app interface" class="app-screenshot" />
+
+        <!-- RENDER: Calendar Week View -->
+        <div class="render render-calendar">
+          <div class="cal-toolbar">
+            <div class="cal-toolbar-left">
+              <button class="cal-nav-btn">&lsaquo;</button>
+              <button class="cal-today-btn">Today</button>
+              <button class="cal-nav-btn">&rsaquo;</button>
+              <span class="cal-month">March 2026</span>
+            </div>
+            <div class="cal-toolbar-right">
+              <div class="cal-view-toggle">
+                <button class="active">Week</button>
+                <button>Day</button>
+              </div>
+            </div>
+          </div>
+          <div class="cal-grid">
+            <div class="cal-gutter">
+              <div class="cal-gutter-header"></div>
+              <div class="cal-hours">
+                <span>8 AM</span><span>9 AM</span><span>10 AM</span><span>11 AM</span><span>12 PM</span><span>1 PM</span><span>2 PM</span><span>3 PM</span><span>4 PM</span>
+              </div>
+            </div>
+            <div class="cal-days">
+              <div class="cal-day-headers">
+                <div class="cal-day-header"><span class="day-name">MON</span><span class="day-num">30</span></div>
+                <div class="cal-day-header today"><span class="day-name">TUE</span><span class="day-num">31</span></div>
+                <div class="cal-day-header"><span class="day-name">WED</span><span class="day-num">1</span></div>
+                <div class="cal-day-header"><span class="day-name">THU</span><span class="day-num">2</span></div>
+                <div class="cal-day-header"><span class="day-name">FRI</span><span class="day-num">3</span></div>
+              </div>
+              <div class="cal-body">
+                <!-- Monday -->
+                <div class="cal-col">
+                  <div class="cal-event blue" style="top: 12%; height: 18%;"><span class="ev-title">MC-412 Fix auth timeout</span><span class="ev-time">9:00 – 10:30</span></div>
+                  <div class="cal-event violet" style="top: 34%; height: 8%;"><span class="ev-title">Standup</span><span class="ev-time">11:00</span></div>
+                  <div class="cal-event emerald" style="top: 50%; height: 22%;"><span class="ev-title">MC-389 API rate limiter</span><span class="ev-time">1:00 – 3:00</span></div>
+                </div>
+                <!-- Tuesday (today) -->
+                <div class="cal-col today-col">
+                  <div class="cal-event amber" style="top: 2%; height: 14%;"><span class="ev-title">PR-27 Review: DB migration</span><span class="ev-time">8:00 – 9:00</span></div>
+                  <div class="cal-event emerald" style="top: 22%; height: 22%;"><span class="ev-title">MC-389 Rate limiter (cont.)</span><span class="ev-time">10:00 – 12:00</span></div>
+                  <div class="cal-event rose" style="top: 50%; height: 12%;"><span class="ev-title">1:1 with Manager</span><span class="ev-time">1:00 – 2:00</span></div>
+                  <div class="cal-event blue" style="top: 68%; height: 16%;"><span class="ev-title">MC-415 Cache layer</span><span class="ev-time">3:00 – 4:30</span></div>
+                </div>
+                <!-- Wednesday -->
+                <div class="cal-col">
+                  <div class="cal-event cyan" style="top: 12%; height: 22%;"><span class="ev-title">MC-415 Cache layer (cont.)</span><span class="ev-time">9:00 – 11:00</span></div>
+                  <div class="cal-event violet" style="top: 38%; height: 8%;"><span class="ev-title">Standup</span><span class="ev-time">11:30</span></div>
+                  <div class="cal-event amber" style="top: 56%; height: 14%;"><span class="ev-title">PR-31 Review: Frontend</span><span class="ev-time">2:00 – 3:00</span></div>
+                </div>
+                <!-- Thursday -->
+                <div class="cal-col">
+                  <div class="cal-event emerald" style="top: 2%; height: 26%;"><span class="ev-title">MC-420 Deploy pipeline</span><span class="ev-time">8:00 – 10:30</span></div>
+                  <div class="cal-event pink" style="top: 34%; height: 8%;"><span class="ev-title">Sprint retro</span><span class="ev-time">11:00</span></div>
+                  <div class="cal-event blue" style="top: 50%; height: 18%;"><span class="ev-title">MC-421 Docs update</span><span class="ev-time">1:00 – 2:30</span></div>
+                </div>
+                <!-- Friday -->
+                <div class="cal-col">
+                  <div class="cal-event violet" style="top: 2%; height: 12%;"><span class="ev-title">Sprint planning</span><span class="ev-time">8:00 – 9:00</span></div>
+                  <div class="cal-event amber" style="top: 22%; height: 14%;"><span class="ev-title">PR-33 Review: API tests</span><span class="ev-time">10:00 – 11:00</span></div>
+                  <div class="cal-event cyan" style="top: 44%; height: 20%;"><span class="ev-title">MC-422 Webhook handler</span><span class="ev-time">12:30 – 2:30</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview 2: Dashboard -->
+      <div class="app-frame">
+        <div class="frame-chrome">
+          <div class="traffic-lights">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="frame-nav">
+            <span class="frame-nav-item active">Calendar</span>
+            <span class="frame-nav-item">Dashboard</span>
+            <span class="frame-nav-item">Contribute</span>
+          </div>
+        </div>
+
+        <!-- RENDER: Dashboard Task List -->
+        <div class="render render-dashboard">
+          <div class="dash-header">
+            <h2 class="dash-title">Mira</h2>
+            <span class="dash-status"><span class="status-dot green"></span>Synced</span>
+            <div class="dash-actions">
+              <button class="dash-btn">Refresh</button>
+              <button class="dash-btn primary">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                Sync to Calendar
+              </button>
+              <button class="dash-btn schedule-btn">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Auto-Schedule
+              </button>
+            </div>
+          </div>
+          <div class="dash-toolbar">
+            <div class="dash-filters">
+              <button class="filter-pill active">All <span class="pill-count">8</span></button>
+              <button class="filter-pill">Unscheduled <span class="pill-count">3</span></button>
+              <button class="filter-pill">Scheduled <span class="pill-count">5</span></button>
+            </div>
+            <div class="dash-search">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span class="search-placeholder">Search tasks...</span>
+            </div>
+          </div>
+
+          <!-- Epic Group -->
+          <div class="task-group">
+            <div class="epic-header">
+              <span class="epic-key">MC-400</span>
+              <span class="epic-name">Platform Performance</span>
+              <span class="epic-count">3 tasks</span>
+            </div>
+            <div class="task-row">
+              <div class="task-check"></div>
+              <div class="task-body">
+                <div class="task-top">
+                  <span class="task-key">MC-412</span>
+                  <span class="task-status">In Progress</span>
+                  <span class="task-priority high">High</span>
+                  <span class="synced-dot"></span>
+                </div>
+                <div class="task-summary">Fix authentication timeout on token refresh</div>
+                <div class="task-meta">
+                  <span>machine-cloud</span>
+                  <span class="mono">2h est.</span>
+                  <span class="due">Due Apr 2</span>
+                </div>
+              </div>
+              <button class="task-action">Reschedule</button>
+            </div>
+            <div class="task-row">
+              <div class="task-check"></div>
+              <div class="task-body">
+                <div class="task-top">
+                  <span class="task-key">MC-389</span>
+                  <span class="task-status">In Review</span>
+                  <span class="task-priority medium">Medium</span>
+                  <span class="synced-dot"></span>
+                </div>
+                <div class="task-summary">Implement API rate limiter for external endpoints</div>
+                <div class="task-meta">
+                  <span>machine-cloud</span>
+                  <span class="mono">4h est.</span>
+                </div>
+              </div>
+              <button class="task-action">Reschedule</button>
+            </div>
+            <div class="task-row">
+              <div class="task-check"></div>
+              <div class="task-body">
+                <div class="task-top">
+                  <span class="task-key">MC-415</span>
+                  <span class="task-status">To Do</span>
+                  <span class="task-priority medium">Medium</span>
+                </div>
+                <div class="task-summary">Add Redis cache layer for dashboard queries</div>
+                <div class="task-meta">
+                  <span>machine-cloud</span>
+                  <span class="mono">3h est.</span>
+                  <span class="due">Due Apr 5</span>
+                </div>
+              </div>
+              <button class="task-action primary">Schedule</button>
+            </div>
+          </div>
+
+          <!-- PR Group -->
+          <div class="task-group">
+            <div class="epic-header">
+              <span class="epic-key pr">PRs</span>
+              <span class="epic-name">Pending Reviews</span>
+              <span class="epic-count">2 reviews</span>
+            </div>
+            <div class="task-row">
+              <div class="task-check"></div>
+              <div class="task-body">
+                <div class="task-top">
+                  <span class="task-key pr-key">PR-27</span>
+                  <span class="task-status">Needs Review</span>
+                </div>
+                <div class="task-summary">feat: database migration for user preferences</div>
+                <div class="task-meta"><span>jaczaar/mira</span><span class="mono">1h est.</span></div>
+              </div>
+              <button class="task-action primary">Schedule</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview 3: Contribute (Edit Mode) -->
+      <div class="app-frame" id="contribute">
+        <div class="frame-chrome">
+          <div class="traffic-lights">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="frame-nav">
+            <span class="frame-nav-item">Calendar</span>
+            <span class="frame-nav-item">Dashboard</span>
+            <span class="frame-nav-item active">Contribute</span>
+          </div>
+        </div>
+
+        <!-- RENDER: Edit Mode / Claude Code Chat -->
+        <div class="render render-edit">
+          <div class="edit-split">
+            <!-- Chat pane -->
+            <div class="chat-pane">
+              <div class="chat-messages">
+                <div class="chat-msg user">
+                  <div class="msg-bubble user-bubble">Can you add a dark mode toggle to the settings page?</div>
+                </div>
+                <div class="chat-msg assistant">
+                  <div class="msg-bubble assistant-bubble">
+                    I'll add a dark mode toggle to the settings page. Let me make the changes:
+                    <div class="msg-diff">
+                      <div class="diff-header">
+                        <span class="diff-file">src/lib/components/Settings.svelte</span>
+                        <span class="diff-badge">+12 -2</span>
+                      </div>
+                      <div class="diff-lines">
+                        <div class="diff-add">+ &lt;div class="setting-row"&gt;</div>
+                        <div class="diff-add">+   &lt;label&gt;Theme&lt;/label&gt;</div>
+                        <div class="diff-add">+   &lt;ThemeToggle /&gt;</div>
+                        <div class="diff-add">+ &lt;/div&gt;</div>
+                      </div>
+                    </div>
+                    Done! I've added the toggle. Want me to create a PR with these changes?
+                  </div>
+                </div>
+                <div class="chat-msg user">
+                  <div class="msg-bubble user-bubble">Yes, please open a PR!</div>
+                </div>
+                <div class="chat-msg assistant">
+                  <div class="msg-bubble assistant-bubble">
+                    <span class="msg-check">&#10003;</span> PR #14 created: <a class="msg-link">Add dark mode toggle to settings</a>
+                  </div>
+                </div>
+              </div>
+              <div class="chat-input">
+                <span class="chat-placeholder">Describe what you'd like to change...</span>
+              </div>
+            </div>
+            <!-- Divider -->
+            <div class="edit-divider"></div>
+            <!-- Preview pane -->
+            <div class="preview-pane">
+              <div class="preview-bar">
+                <span class="preview-label">Preview</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </div>
+              <div class="preview-iframe">
+                <div class="preview-mock">
+                  <div class="preview-settings-header">Settings</div>
+                  <div class="preview-setting-row">
+                    <span>Jira Connection</span>
+                    <span class="preview-connected">Connected</span>
+                  </div>
+                  <div class="preview-setting-row">
+                    <span>Google Calendar</span>
+                    <span class="preview-connected">Connected</span>
+                  </div>
+                  <div class="preview-setting-row highlight">
+                    <span>Theme</span>
+                    <div class="preview-toggle">
+                      <span class="toggle-opt">Light</span>
+                      <span class="toggle-opt active">Dark</span>
+                      <span class="toggle-opt">System</span>
+                    </div>
+                  </div>
+                  <div class="preview-setting-row">
+                    <span>Sync Frequency</span>
+                    <span class="preview-value">Hourly</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Contribute Section -->
+  <section class="contribute-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Open Source</span>
+        <h2>Everyone is a developer.<br /><span class="gradient-text">No coding required.</span></h2>
+        <p class="section-desc">
+          Mira has a built-in Claude Code chatbot. Describe what you want to change in plain English,
+          review the diff, and submit a PR — all from inside the app. You don't need to know how to code.
+        </p>
+      </div>
+      <div class="contribute-grid">
+        <div class="contribute-card">
+          <div class="contribute-step">01</div>
+          <h3>Describe</h3>
+          <p>Tell Claude what you'd like to change — a new feature, a bug fix, a UI tweak. Use your own words.</p>
+        </div>
+        <div class="contribute-card">
+          <div class="contribute-step">02</div>
+          <h3>Review</h3>
+          <p>See the exact code changes in a diff viewer. The live preview updates in real time so you can verify.</p>
+        </div>
+        <div class="contribute-card">
+          <div class="contribute-step">03</div>
+          <h3>Ship</h3>
+          <p>One click creates a pull request on GitHub. The maintainer reviews and merges — your contribution is live.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -82,7 +408,7 @@
   <section class="features" id="features">
     <div class="container">
       <div class="section-header">
-        <span class="section-tag">What it does</span>
+        <span class="section-tag">Features</span>
         <h2>One app for your<br />entire workweek.</h2>
       </div>
       <div class="feature-grid">
