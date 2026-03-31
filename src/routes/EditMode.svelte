@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { getVersion } from "@tauri-apps/api/app";
+  import { check } from "@tauri-apps/plugin-updater";
   import ChatWidget from "../lib/components/ChatWidget.svelte";
   import SetupWizard from "../lib/components/SetupWizard.svelte";
   import {
@@ -15,7 +17,21 @@
   let dragging = $state(false);
   let containerEl: HTMLDivElement | undefined = $state();
 
+  let appVersion = $state("");
+  let updateAvailable = $state(false);
+  let updateVersion = $state("");
+
   onMount(async () => {
+    // Check version + updates
+    try {
+      appVersion = await getVersion();
+      const update = await check();
+      if (update) {
+        updateAvailable = true;
+        updateVersion = update.version;
+      }
+    } catch {}
+
     if ($vitePort && $setupStep === "READY") {
       return;
     }
@@ -82,11 +98,21 @@
         {#if $vitePort}
           <div class="preview-header">
             <span class="preview-label">Preview</span>
-            <button class="external-btn" onclick={openExternal} title="Open in browser">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-              </svg>
-            </button>
+            <div class="preview-right">
+              {#if updateAvailable}
+                <span class="update-badge" title="A newer version is available — update in Settings">
+                  v{updateVersion} available
+                </span>
+              {/if}
+              {#if appVersion}
+                <span class="version-badge">v{appVersion}</span>
+              {/if}
+              <button class="external-btn" onclick={openExternal} title="Open in browser">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+              </button>
+            </div>
           </div>
           <iframe
             src={`http://localhost:${$vitePort}`}
@@ -183,6 +209,34 @@
     color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+  }
+
+  .preview-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .version-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg-hover);
+  }
+
+  .update-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent-amber);
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(245, 208, 107, 0.1);
+    border: 1px solid rgba(245, 208, 107, 0.2);
+    cursor: default;
   }
 
   .external-btn {
