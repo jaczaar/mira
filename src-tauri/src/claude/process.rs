@@ -8,24 +8,16 @@ use super::error::ClaudeError;
 use super::types::{ChatStreamEvent, ClaudeInfo};
 
 pub async fn check_installed() -> Result<ClaudeInfo, ClaudeError> {
-    let which_output = Command::new("which")
-        .arg("claude")
-        .output()
-        .await
-        .map_err(|e| ClaudeError::NotInstalled(e.to_string()))?;
-
-    if !which_output.status.success() {
-        return Err(ClaudeError::NotInstalled(
+    // Try `which` first, then fall back to common install locations.
+    // GUI apps on macOS don't inherit the user's shell PATH, so `which` often fails.
+    let path = find_claude_path().await.ok_or_else(|| {
+        ClaudeError::NotInstalled(
             "claude CLI not found in PATH. Install with: npm install -g @anthropic-ai/claude-code"
                 .to_string(),
-        ));
-    }
+        )
+    })?;
 
-    let path = String::from_utf8_lossy(&which_output.stdout)
-        .trim()
-        .to_string();
-
-    let version_output = Command::new("claude")
+    let version_output = Command::new(&path)
         .arg("--version")
         .output()
         .await
@@ -38,13 +30,70 @@ pub async fn check_installed() -> Result<ClaudeInfo, ClaudeError> {
     Ok(ClaudeInfo { path, version })
 }
 
+async fn find_claude_path() -> Option<String> {
+    // Try `which` first (works when PATH is properly set)
+    if let Ok(output) = Command::new("which").arg("claude").output().await {
+        if output.status.success() {
+            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !path.is_empty() {
+                return Some(path);
+            }
+        }
+    }
+
+    // Fall back to common install locations
+    let home = std::env::var("HOME").unwrap_or_default();
+    let candidates = [
+        format!("{}/.local/bin/claude", home),
+        format!("{}/.claude/local/claude", home),
+        "/usr/local/bin/claude".to_string(),
+        format!("{}/.nvm/versions/node/default/bin/claude", home),
+    ];
+
+    for candidate in &candidates {
+        if tokio::fs::metadata(candidate).await.is_ok() {
+            return Some(candidate.clone());
+        }
+    }
+
+    None
+}
+
+fn find_claude_path_sync() -> Option<String> {
+    if let Ok(output) = std::process::Command::new("which").arg("claude").output() {
+        if output.status.success() {
+            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !path.is_empty() {
+                return Some(path);
+            }
+        }
+    }
+
+    let home = std::env::var("HOME").unwrap_or_default();
+    let candidates = [
+        format!("{}/.local/bin/claude", home),
+        format!("{}/.claude/local/claude", home),
+        "/usr/local/bin/claude".to_string(),
+        format!("{}/.nvm/versions/node/default/bin/claude", home),
+    ];
+
+    for candidate in &candidates {
+        if std::path::Path::new(candidate).exists() {
+            return Some(candidate.clone());
+        }
+    }
+
+    None
+}
+
 pub fn spawn_claude(
     repo_path: &Path,
     session_id: &str,
     message: &str,
     is_continuation: bool,
 ) -> Result<tokio::process::Child, ClaudeError> {
-    let mut cmd = Command::new("claude");
+    let claude_bin = find_claude_path_sync().unwrap_or_else(|| "claude".to_string());
+    let mut cmd = Command::new(&claude_bin);
     cmd.arg("--print")
         .arg("--verbose")
         .arg("--output-format")

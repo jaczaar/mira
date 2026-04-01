@@ -31,13 +31,8 @@ pub struct WorkspaceStatus {
 pub async fn check_status() -> Result<WorkspaceStatus, WorkspaceError> {
     let workspace_path = get_workspace_path()?;
 
-    // Check Claude Code CLI
-    let claude_available = Command::new("which")
-        .arg("claude")
-        .output()
-        .await
-        .map(|o| o.status.success())
-        .unwrap_or(false);
+    // Check Claude Code CLI — GUI apps don't inherit shell PATH, so fall back to common locations
+    let claude_available = crate::claude::process::check_installed().await.is_ok();
 
     // Check Node.js (local first, then system)
     let (node_installed, node_path) = if let Some(local) = node::get_local_node_binary()? {
