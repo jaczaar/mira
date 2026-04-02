@@ -10,7 +10,12 @@
     loadCalendarsForAllAccounts,
     getCachedEvents,
     setCachedEvents,
+    createCalendarEvent,
+    updateCalendarEvent,
+    deleteCalendarEvent,
   } from "../lib/stores/calendar";
+  import EventCreateModal from "../lib/components/EventCreateModal.svelte";
+  import EventPopover from "../lib/components/EventPopover.svelte";
   import { loadConfig, config, saveConfig } from "../lib/stores/config";
   import {
     googleAccounts,
@@ -73,6 +78,149 @@
     await saveConfig(updated);
     colorPickerCal = null;
   }
+
+  // Event create/popover state
+  let createEventData = $state<{ date: string; startTime: string; endTime: string } | null>(null);
+  let popoverEvent = $state<{ event: CalendarEvent; position: { x: number; y: number } } | null>(null);
+
+  // Drag-to-create state
+  let dragState = $state<{
+    day: Date;
+    startMinutes: number;
+    currentMinutes: number;
+    columnEl: HTMLElement;
+  } | null>(null);
+
+  function minutesFromEvent(e: MouseEvent, columnEl: HTMLElement): number {
+    const rect = columnEl.getBoundingClientRect();
+    const paddingTop = HOUR_HEIGHT * GRID_OFFSET / 60;
+    const scrollParent = columnEl.closest(".grid-body");
+    const scrollTop = scrollParent ? scrollParent.scrollTop : 0;
+    const relativeY = e.clientY - rect.top + scrollTop - paddingTop;
+    const totalMinutes = (relativeY / HOUR_HEIGHT) * 60 + startHour * 60;
+    return Math.round(totalMinutes / 15) * 15;
+  }
+
+  function formatMinutesToTime(m: number): string {
+    const h = Math.floor(m / 60);
+    const min = m % 60;
+    return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+  }
+
+  function handleDayMouseDown(day: Date, e: MouseEvent) {
+    if (e.button !== 0) return;
+    const target = e.currentTarget as HTMLElement;
+    const mins = minutesFromEvent(e, target);
+    const clamped = Math.max(startHour * 60, Math.min(endHour * 60, mins));
+    dragState = { day, startMinutes: clamped, currentMinutes: clamped, columnEl: target };
+  }
+
+  function handleMouseMove(e: MouseEvent) {
+    if (!dragState) return;
+    const mins = minutesFromEvent(e, dragState.columnEl);
+    dragState.currentMinutes = Math.max(startHour * 60, Math.min(endHour * 60, mins));
+  }
+
+  function handleMouseUp() {
+    if (!dragState) return;
+    const minStart = Math.min(dragState.startMinutes, dragState.currentMinutes);
+    const minEnd = Math.max(dragState.startMinutes, dragState.currentMinutes);
+    const duration = minEnd - minStart;
+
+    // If drag was too short (< 10min movement), treat as click — default to 1 hour
+    const effectiveStart = minStart;
+    const effectiveEnd = duration < 10 ? Math.min(minStart + 60, endHour * 60) : minEnd;
+
+    createEventData = {
+      date: formatDate(dragState.day),
+      startTime: formatMinutesToTime(effectiveStart),
+      endTime: formatMinutesToTime(effectiveEnd),
+    };
+    dragState = null;
+  }
+
+  // Derived drag preview geometry
+  const dragPreview = $derived.by(() => {
+    if (!dragState) return null;
+    const minStart = Math.min(dragState.startMinutes, dragState.currentMinutes);
+    const minEnd = Math.max(dragState.startMinutes, dragState.currentMinutes);
+    const duration = Math.max(minEnd - minStart, 15);
+    const top = ((minStart - startHour * 60) / 60) * HOUR_HEIGHT + (HOUR_HEIGHT * GRID_OFFSET / 60) + 1;
+    const height = (duration / 60) * HOUR_HEIGHT - 2;
+    return {
+      top: `${top}px`,
+      height: `${Math.max(height, 8)}px`,
+      startTime: formatMinutesToTime(minStart),
+      endTime: formatMinutesToTime(minEnd),
+      dayStr: formatDate(dragState.day),
+    };
+  });
+
+  function handleEventClick(event: CalendarEvent, e: MouseEvent) {
+    e.stopPropagation();
+    popoverEvent = {
+      event,
+      position: { x: e.clientX + 8, y: e.clientY - 20 },
+    };
+  }
+
+  async function handleCreateEvent(data: {
+    summary: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    calendarUid: string;
+    description: string;
+  }) {
+    const accountEmail = getAccountForCalendar(data.calendarUid);
+    if (!accountEmail) return;
+
+    const startDate = `${data.date}T${data.startTime}:00`;
+    const endDate = `${data.date}T${data.endTime}:00`;
+
+    await createCalendarEvent(accountEmail, {
+      summary: data.summary,
+      start_date: startDate,
+      end_date: endDate,
+      description: data.description || null,
+      url: null,
+      calendar_name: data.calendarUid,
+      is_focus_time: false,
+      color_id: null,
+    });
+
+    createEventData = null;
+    await loadWeekEvents();
+  }
+
+  async function handleEditEvent(event: CalendarEvent, updates: { summary?: string; start_date?: string; end_date?: string; description?: string | null }) {
+    const accountEmail = getAccountForCalendar(event.calendar_name);
+    if (!accountEmail) return;
+
+    await updateCalendarEvent(accountEmail, {
+      uid: event.uid,
+      summary: updates.summary ?? null,
+      start_date: updates.start_date ?? null,
+      end_date: updates.end_date ?? null,
+      description: updates.description !== undefined ? updates.description : null,
+      url: null,
+      calendar_name: event.calendar_name,
+      is_focus_time: null,
+      color_id: null,
+    });
+  }
+
+  async function handleDeleteEvent(event: CalendarEvent) {
+    const accountEmail = getAccountForCalendar(event.calendar_name);
+    if (!accountEmail) return;
+
+    await deleteCalendarEvent(accountEmail, event.uid, event.calendar_name);
+    popoverEvent = null;
+  }
+
+  const enabledCalendarList = $derived(
+    $calendars.filter((c) => enabledCalendars.has(c.uid))
+  );
 
   let connectLoading = $state(false);
   let connectError = $state<string | null>(null);
@@ -465,7 +613,9 @@
   });
 </script>
 
-<div class="calendar-view">
+<svelte:window onmousemove={handleMouseMove} onmouseup={handleMouseUp} />
+
+<div class="calendar-view" class:dragging={!!dragState}>
   <div class="cal-header">
     <div class="cal-nav">
       <button class="nav-btn" onclick={() => navigateWeek(-1)}>
@@ -695,7 +845,8 @@
 
         <div class="days-container">
           {#each viewMode === "week" ? weekDays : [currentDate] as day, dayIndex}
-            <div class="day-column" class:today={isToday(day)} style="padding-top: {HOUR_HEIGHT * GRID_OFFSET / 60}px">
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <div class="day-column" class:today={isToday(day)} style="padding-top: {HOUR_HEIGHT * GRID_OFFSET / 60}px" role="button" tabindex="-1" onmousedown={(e) => handleDayMouseDown(day, e)}>
               {#each HOURS as _hour}
                 <div class="hour-slot" style="height: {HOUR_HEIGHT}px"></div>
               {/each}
@@ -716,11 +867,16 @@
                 {@const duration = getEventDurationMinutes(event)}
                 {@const isShort = duration <= 45}
                 {#if style}
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <div
                     class="event-block"
                     class:event-block--short={isShort}
                     style="top: {style.top}; height: {style.height}; background: {color.bg}; border-left-color: {color.border}; left: calc(3px + {column} * (100% - 6px) / {totalColumns}); width: calc((100% - 6px) / {totalColumns} - 2px)"
                     title={event.summary}
+                    role="button"
+                    tabindex="-1"
+                    onmousedown={(e) => e.stopPropagation()}
+                    onclick={(e) => handleEventClick(event, e)}
                   >
                     {#if isShort}
                       <span class="event-title" style="color: {color.title}">{formatEventTime(event)} · {event.summary}</span>
@@ -731,6 +887,15 @@
                   </div>
                 {/if}
               {/each}
+
+              {#if dragPreview && dragPreview.dayStr === formatDate(day)}
+                <div
+                  class="drag-preview"
+                  style="top: {dragPreview.top}; height: {dragPreview.height}"
+                >
+                  <span class="drag-preview-time">{dragPreview.startTime} – {dragPreview.endTime}</span>
+                </div>
+              {/if}
             </div>
           {/each}
         </div>
@@ -749,6 +914,28 @@
     {/if}
   {/if}
 </div>
+
+{#if createEventData}
+  <EventCreateModal
+    date={createEventData.date}
+    startTime={createEventData.startTime}
+    endTime={createEventData.endTime}
+    calendars={enabledCalendarList}
+    defaultCalendarUid={enabledCalendarList[0]?.uid ?? null}
+    onSave={handleCreateEvent}
+    onClose={() => (createEventData = null)}
+  />
+{/if}
+
+{#if popoverEvent}
+  <EventPopover
+    event={popoverEvent.event}
+    position={popoverEvent.position}
+    onEdit={handleEditEvent}
+    onDelete={handleDeleteEvent}
+    onClose={() => (popoverEvent = null)}
+  />
+{/if}
 
 <style>
   .calendar-view {
@@ -1703,6 +1890,37 @@
     font-size: 10px;
     -webkit-line-clamp: 1;
     white-space: nowrap;
+  }
+
+  .calendar-view.dragging {
+    cursor: ns-resize;
+    user-select: none;
+  }
+
+  .calendar-view.dragging .event-block {
+    pointer-events: none;
+  }
+
+  .drag-preview {
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    background: var(--accent-blue-glow);
+    border: 2px dashed var(--accent-blue);
+    border-radius: 5px;
+    z-index: 10;
+    display: flex;
+    align-items: flex-start;
+    padding: 4px 8px;
+    pointer-events: none;
+  }
+
+  .drag-preview-time {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    letter-spacing: 0.02em;
   }
 
   .event-time {

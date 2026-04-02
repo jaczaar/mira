@@ -14,6 +14,7 @@
     stopSession,
     discardAllChanges,
     submitPR,
+    checkForChanges,
   } from "../stores/chat";
   import DiffViewer from "./DiffViewer.svelte";
   import PRSubmitForm from "./PRSubmitForm.svelte";
@@ -77,6 +78,12 @@
     </div>
     <div class="chat-actions">
       {#if $chatSession}
+        <button class="icon-btn" onclick={() => checkForChanges($chatSession!.sessionId)} title="Check for changes">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 11-6.22-8.56" />
+            <polyline points="21 3 21 9 15 9" />
+          </svg>
+        </button>
         <button class="icon-btn" onclick={stopSession} title="End session">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="18" height="18" rx="2" />

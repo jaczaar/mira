@@ -82,6 +82,17 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
+      - name: Sync version to tag
+        run: |
+          TAG="${{ needs.tag.outputs.tag }}"
+          VERSION="${TAG#v}"
+          if command -v jq &> /dev/null; then
+            jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+          else
+            sed -i.bak "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json && rm -f src-tauri/tauri.conf.json.bak
+          fi
+          echo "Set version to $VERSION"
+
       - name: Install frontend dependencies
         run: npm ci
 

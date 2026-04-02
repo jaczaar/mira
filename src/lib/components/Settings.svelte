@@ -221,7 +221,6 @@
     try {
       const update = await check();
       if (update) {
-        updateAvailable: true;
         updateVersion = update.version;
         updateNotes = update.body ?? "";
         updateStatus = "available";
@@ -231,7 +230,12 @@
       }
     } catch (error) {
       updateStatus = "error";
-      updateError = error instanceof Error ? error.message : String(error);
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.includes("release JSON") || msg.includes("404") || msg.includes("Not Found")) {
+        updateError = "No published updates found. Updates will appear here when a new release is available.";
+      } else {
+        updateError = msg;
+      }
     }
   }
 

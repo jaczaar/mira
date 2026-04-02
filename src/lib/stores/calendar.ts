@@ -149,3 +149,44 @@ export function hasConflict(
     return newStart < eventEnd && newEnd > eventStart;
   });
 }
+
+export async function createCalendarEvent(
+  accountEmail: string,
+  request: api.CreateEventRequest
+): Promise<string> {
+  const uid = await api.createEvent(accountEmail, request);
+  invalidateCache();
+  return uid;
+}
+
+export async function updateCalendarEvent(
+  accountEmail: string,
+  request: api.UpdateEventRequest
+): Promise<void> {
+  await api.updateEvent(accountEmail, request);
+  calendarEvents.update((events) =>
+    events.map((e) => {
+      if (e.uid !== request.uid) return e;
+      return {
+        ...e,
+        summary: request.summary ?? e.summary,
+        start_date: request.start_date ?? e.start_date,
+        end_date: request.end_date ?? e.end_date,
+        description: request.description !== undefined ? request.description : e.description,
+      };
+    })
+  );
+  invalidateCache();
+}
+
+export async function deleteCalendarEvent(
+  accountEmail: string,
+  eventUid: string,
+  calendarName: string
+): Promise<void> {
+  await api.deleteEvent(accountEmail, eventUid, calendarName);
+  calendarEvents.update((events) =>
+    events.filter((e) => e.uid !== eventUid)
+  );
+  invalidateCache();
+}

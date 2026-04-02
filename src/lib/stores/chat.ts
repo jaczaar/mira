@@ -119,7 +119,6 @@ export async function startSession(repoPath: string): Promise<void> {
         if (event_type === "content") {
           const lastMsg = s.messages[s.messages.length - 1];
           if (lastMsg && lastMsg.role === "assistant" && lastMsg.isStreaming) {
-            // Try to parse stream-json format
             let text = "";
             try {
               const parsed = JSON.parse(data);
@@ -132,35 +131,40 @@ export async function startSession(repoPath: string): Promise<void> {
               } else if (parsed.type === "content_block_delta") {
                 text = parsed.delta?.text || "";
               }
-              // All other JSON event types (result, message_start, etc.) are ignored
             } catch {
-              // Not JSON — use raw text as-is
               text = data;
             }
             if (text) {
-              lastMsg.content += text;
+              const updated = { ...lastMsg, content: lastMsg.content + text };
+              return { ...s, messages: [...s.messages.slice(0, -1), updated] };
             }
           }
         } else if (event_type === "done") {
           const lastMsg = s.messages[s.messages.length - 1];
           if (lastMsg && lastMsg.role === "assistant") {
-            lastMsg.isStreaming = false;
+            const updated = { ...lastMsg, isStreaming: false };
+            chatLoading.set(false);
+            checkForChanges(s.sessionId);
+            return { ...s, messages: [...s.messages.slice(0, -1), updated] };
           }
           chatLoading.set(false);
-          // Auto-check for changes after response completes
           checkForChanges(s.sessionId);
         } else if (event_type === "error") {
           const lastMsg = s.messages[s.messages.length - 1];
           if (lastMsg && lastMsg.role === "assistant" && lastMsg.isStreaming) {
-            lastMsg.content += `\n\n**Error:** ${data}`;
+            const updated = { ...lastMsg, content: lastMsg.content + `\n\n**Error:** ${data}` };
+            return { ...s, messages: [...s.messages.slice(0, -1), updated] };
           }
         }
 
-        return { ...s, messages: [...s.messages] };
+        return s;
       });
     });
 
     chatError.set(null);
+
+    // Auto-check for existing uncommitted changes
+    checkForChanges(sessionId);
   } catch (e) {
     chatError.set(String(e));
   }
@@ -246,7 +250,7 @@ export async function cancelMessage(): Promise<void> {
   });
 }
 
-async function checkForChanges(sessionId: string): Promise<void> {
+export async function checkForChanges(sessionId: string): Promise<void> {
   try {
     const diff = await getChangesDiff(sessionId);
     if (diff.files.length > 0) {

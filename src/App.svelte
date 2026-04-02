@@ -6,9 +6,10 @@
   import Calendar from "./routes/Calendar.svelte";
   import About from "./routes/About.svelte";
   import EditMode from "./routes/EditMode.svelte";
+  import SettingsPage from "./routes/SettingsPage.svelte";
   import "./lib/stores/theme";
 
-  type Route = "dashboard" | "calendar" | "about" | "edit";
+  type Route = "dashboard" | "calendar" | "about" | "edit" | "settings";
   let currentRoute = $state<Route>("calendar");
 
   function navigate(route: Route) {
@@ -53,6 +54,8 @@
       <About />
     {:else if currentRoute === "edit"}
       <EditMode />
+    {:else if currentRoute === "settings"}
+      <SettingsPage />
     {/if}
   </div>
   <Header {currentRoute} onNavigate={navigate} />
