@@ -16,6 +16,8 @@
   } from "../lib/stores/calendar";
   import EventCreateModal from "../lib/components/EventCreateModal.svelte";
   import EventPopover from "../lib/components/EventPopover.svelte";
+  import CalendarSidebar from "../lib/components/CalendarSidebar.svelte";
+  import type { SidebarTask } from "../lib/stores/sidebarTasks";
   import { loadConfig, config, saveConfig } from "../lib/stores/config";
   import {
     googleAccounts,
@@ -81,7 +83,18 @@
 
   // Event create/popover state
   let createEventData = $state<{ date: string; startTime: string; endTime: string } | null>(null);
+  let sidebarPrefillSummary = $state<string>("");
   let popoverEvent = $state<{ event: CalendarEvent; position: { x: number; y: number } } | null>(null);
+
+  function handleSidebarSchedule(task: SidebarTask) {
+    sidebarPrefillSummary = task.title;
+    const today = new Date();
+    createEventData = {
+      date: formatDate(today),
+      startTime: "09:00",
+      endTime: "10:00",
+    };
+  }
 
   // Drag-to-create state
   let dragState = $state<{
@@ -750,6 +763,9 @@
     </div>
   </div>
 
+  <div class="cal-body">
+    <CalendarSidebar onScheduleActive={handleSidebarSchedule} />
+    <div class="cal-main">
   {#if !hasAnyAccounts}
     <div class="empty-state">
       <div class="empty-icon">
@@ -913,6 +929,8 @@
       </div>
     {/if}
   {/if}
+    </div>
+  </div>
 </div>
 
 {#if createEventData}
@@ -920,10 +938,11 @@
     date={createEventData.date}
     startTime={createEventData.startTime}
     endTime={createEventData.endTime}
+    initialSummary={sidebarPrefillSummary}
     calendars={enabledCalendarList}
     defaultCalendarUid={enabledCalendarList[0]?.uid ?? null}
     onSave={handleCreateEvent}
-    onClose={() => (createEventData = null)}
+    onClose={() => { createEventData = null; sidebarPrefillSummary = ""; }}
   />
 {/if}
 
@@ -941,6 +960,21 @@
   .calendar-view {
     width: 100%;
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .cal-body {
+    flex: 1;
+    display: flex;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  .cal-main {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
   }

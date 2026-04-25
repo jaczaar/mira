@@ -5,6 +5,7 @@
     date: string;
     startTime: string;
     endTime?: string;
+    initialSummary?: string;
     calendars: CalendarInfo[];
     defaultCalendarUid: string | null;
     onSave: (data: {
@@ -22,13 +23,14 @@
     date,
     startTime,
     endTime,
+    initialSummary = "",
     calendars,
     defaultCalendarUid,
     onSave,
     onClose,
   }: Props = $props();
 
-  let summary = $state("");
+  let summary = $state(initialSummary);
   let eventDate = $state(date);
   let eventStartTime = $state(startTime);
   let saving = $state(false);
