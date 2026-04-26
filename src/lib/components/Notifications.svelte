@@ -165,7 +165,7 @@
   }
 
   .notification.info {
-    border-color: rgba(91, 141, 239, 0.2);
+    border-color: var(--accent-blue-dim);
     color: var(--accent-blue);
   }
 

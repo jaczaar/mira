@@ -854,12 +854,12 @@
 
   .btn.primary {
     background: var(--accent-blue-dim);
-    border-color: rgba(91, 141, 239, 0.2);
+    border-color: var(--accent-blue-dim);
     color: var(--accent-blue);
   }
 
   .btn.primary:hover:not(:disabled) {
-    background: rgba(91, 141, 239, 0.2);
+    background: var(--accent-blue-dim);
     box-shadow: var(--shadow-glow-blue);
   }
 

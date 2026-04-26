@@ -17,7 +17,8 @@
   import EventCreateModal from "../lib/components/EventCreateModal.svelte";
   import EventPopover from "../lib/components/EventPopover.svelte";
   import CalendarSidebar from "../lib/components/CalendarSidebar.svelte";
-  import type { SidebarTask } from "../lib/stores/sidebarTasks";
+  import { sidebarTasks, removeTask as removeSidebarTask } from "../lib/stores/sidebarTasks";
+  import { get } from "svelte/store";
   import { loadConfig, config, saveConfig } from "../lib/stores/config";
   import {
     googleAccounts,
@@ -31,6 +32,12 @@
 
   import { onDestroy } from "svelte";
 
+  type AppRoute = "calendar" | "about" | "edit" | "settings";
+  interface Props {
+    onNavigate?: (route: AppRoute) => void;
+  }
+  let { onNavigate }: Props = $props();
+
   let currentDate = $state(new Date());
   let showCalendarMenu = $state(false);
   let now = $state(new Date());
@@ -43,16 +50,16 @@
   }
   let viewMode = $state<"week" | "day">("week");
 
-  // Richer event colors: higher opacity bg, solid border, bright text
+  // Refined event palette: muted, sophisticated tones inspired by Cron / Linear / Things
   const EVENT_COLORS = [
-    { bg: "rgba(59, 130, 246, 0.40)", border: "#3b82f6", text: "#a8c8f8", title: "#e0edfe", wash: "rgba(59, 130, 246, 0.06)" },   // blue
-    { bg: "rgba(139, 92, 246, 0.40)", border: "#8b5cf6", text: "#c4b0f4", title: "#e4d8fe", wash: "rgba(139, 92, 246, 0.06)" },   // violet
-    { bg: "rgba(236, 72, 153, 0.40)", border: "#ec4899", text: "#f0a0c4", title: "#fcd8e8", wash: "rgba(236, 72, 153, 0.06)" },   // pink
-    { bg: "rgba(245, 158, 11, 0.40)", border: "#f59e0b", text: "#f0c870", title: "#fef0d0", wash: "rgba(245, 158, 11, 0.06)" },   // amber
-    { bg: "rgba(16, 185, 129, 0.40)", border: "#10b981", text: "#80d8b0", title: "#c8f0de", wash: "rgba(16, 185, 129, 0.06)" },   // emerald
-    { bg: "rgba(6, 182, 212, 0.40)", border: "#06b6d4", text: "#70c8dc", title: "#c8eef6", wash: "rgba(6, 182, 212, 0.06)" },     // cyan
-    { bg: "rgba(244, 63, 94, 0.40)", border: "#f43f5e", text: "#f4a0b0", title: "#fcd0d8", wash: "rgba(244, 63, 94, 0.06)" },     // rose
-    { bg: "rgba(34, 197, 94, 0.40)", border: "#22c55e", text: "#88dca4", title: "#ccf4d8", wash: "rgba(34, 197, 94, 0.06)" },     // green
+    { bg: "rgba(122, 156, 178, 0.32)", border: "#7a9cb2", text: "#b8cfde", title: "#dceaf2", wash: "rgba(122, 156, 178, 0.05)" },  // dusty blue
+    { bg: "rgba(155, 137, 178, 0.32)", border: "#9b89b2", text: "#c8bcd6", title: "#e6dff0", wash: "rgba(155, 137, 178, 0.05)" },  // muted lavender
+    { bg: "rgba(192, 134, 138, 0.32)", border: "#c0868a", text: "#dab4b6", title: "#efdcdd", wash: "rgba(192, 134, 138, 0.05)" },  // dusty rose
+    { bg: "rgba(192, 156, 102, 0.34)", border: "#c09c66", text: "#dcc599", title: "#efe3c4", wash: "rgba(192, 156, 102, 0.05)" },  // warm ochre
+    { bg: "rgba(122, 158, 134, 0.32)", border: "#7a9e86", text: "#b6cdbe", title: "#dcebe1", wash: "rgba(122, 158, 134, 0.05)" },  // sage
+    { bg: "rgba(110, 158, 156, 0.32)", border: "#6e9e9c", text: "#aecdcb", title: "#d6e8e7", wash: "rgba(110, 158, 156, 0.05)" },  // muted teal
+    { bg: "rgba(192, 122, 110, 0.32)", border: "#c07a6e", text: "#dab2aa", title: "#efd9d2", wash: "rgba(192, 122, 110, 0.05)" },  // terracotta
+    { bg: "rgba(140, 158, 112, 0.32)", border: "#8c9e70", text: "#bdcaa8", title: "#dde4ce", wash: "rgba(140, 158, 112, 0.05)" },  // olive
   ];
 
   function hashString(s: string): number {
@@ -81,20 +88,23 @@
     colorPickerCal = null;
   }
 
+  const SIDEBAR_COLLAPSE_KEY = "mira.calendarSidebar.collapsed.v1";
+  let sidebarCollapsed = $state<boolean>(
+    typeof localStorage !== "undefined" && localStorage.getItem(SIDEBAR_COLLAPSE_KEY) === "1"
+  );
+  function toggleSidebar() {
+    sidebarCollapsed = !sidebarCollapsed;
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(SIDEBAR_COLLAPSE_KEY, sidebarCollapsed ? "1" : "0");
+    }
+  }
+
+  let dragOverDay = $state<string | null>(null);
+  let dragOverMinutes = $state<number | null>(null);
+
   // Event create/popover state
   let createEventData = $state<{ date: string; startTime: string; endTime: string } | null>(null);
-  let sidebarPrefillSummary = $state<string>("");
   let popoverEvent = $state<{ event: CalendarEvent; position: { x: number; y: number } } | null>(null);
-
-  function handleSidebarSchedule(task: SidebarTask) {
-    sidebarPrefillSummary = task.title;
-    const today = new Date();
-    createEventData = {
-      date: formatDate(today),
-      startTime: "09:00",
-      endTime: "10:00",
-    };
-  }
 
   // Drag-to-create state
   let dragState = $state<{
@@ -129,12 +139,22 @@
   }
 
   function handleMouseMove(e: MouseEvent) {
+    if (sidebarResize) {
+      const delta = e.clientX - sidebarResize.startX;
+      sidebarWidth = clampSidebarWidth(sidebarResize.startWidth + delta);
+      return;
+    }
     if (!dragState) return;
     const mins = minutesFromEvent(e, dragState.columnEl);
     dragState.currentMinutes = Math.max(startHour * 60, Math.min(endHour * 60, mins));
   }
 
   function handleMouseUp() {
+    if (sidebarResize) {
+      sidebarResize = null;
+      persistSidebarWidth();
+      return;
+    }
     if (!dragState) return;
     const minStart = Math.min(dragState.startMinutes, dragState.currentMinutes);
     const minEnd = Math.max(dragState.startMinutes, dragState.currentMinutes);
@@ -150,6 +170,50 @@
       endTime: formatMinutesToTime(effectiveEnd),
     };
     dragState = null;
+  }
+
+  const SIDEBAR_WIDTH_KEY = "mira.sidebarWidth.v1";
+  const SIDEBAR_MIN = 200;
+  const SIDEBAR_MAX = 520;
+
+  function clampSidebarWidth(w: number): number {
+    return Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, Math.round(w)));
+  }
+
+  function loadSidebarWidth(): number {
+    if (typeof localStorage === "undefined") return 260;
+    const raw = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+    const parsed = raw ? parseInt(raw, 10) : NaN;
+    return Number.isFinite(parsed) ? clampSidebarWidth(parsed) : 260;
+  }
+
+  let sidebarWidth = $state(loadSidebarWidth());
+  let sidebarResize = $state<{ startX: number; startWidth: number } | null>(null);
+
+  function persistSidebarWidth() {
+    if (typeof localStorage === "undefined") return;
+    try {
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidth));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function startSidebarResize(e: MouseEvent) {
+    e.preventDefault();
+    sidebarResize = { startX: e.clientX, startWidth: sidebarWidth };
+  }
+
+  function onSidebarResizeKey(e: KeyboardEvent) {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      sidebarWidth = clampSidebarWidth(sidebarWidth - (e.shiftKey ? 32 : 8));
+      persistSidebarWidth();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      sidebarWidth = clampSidebarWidth(sidebarWidth + (e.shiftKey ? 32 : 8));
+      persistSidebarWidth();
+    }
   }
 
   // Derived drag preview geometry
@@ -168,6 +232,67 @@
       dayStr: formatDate(dragState.day),
     };
   });
+
+  const SIDEBAR_DRAG_MIME = "application/x-mira-sidebar-task";
+
+  function handleDayDragOver(day: Date, e: DragEvent) {
+    if (!e.dataTransfer) return;
+    const types = e.dataTransfer.types;
+    if (!types.includes(SIDEBAR_DRAG_MIME) && !types.includes("text/plain")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const target = e.currentTarget as HTMLElement;
+    const mins = minutesFromEvent(e, target);
+    dragOverDay = formatDate(day);
+    dragOverMinutes = Math.max(startHour * 60, Math.min(endHour * 60, mins));
+  }
+
+  function handleDayDragLeave(day: Date) {
+    if (dragOverDay === formatDate(day)) {
+      dragOverDay = null;
+      dragOverMinutes = null;
+    }
+  }
+
+  async function handleDayDrop(day: Date, e: DragEvent) {
+    if (!e.dataTransfer) return;
+    const id =
+      e.dataTransfer.getData(SIDEBAR_DRAG_MIME) ||
+      e.dataTransfer.getData("text/plain");
+    if (!id) return;
+    e.preventDefault();
+    const tasks = get(sidebarTasks);
+    const task = tasks.find((t) => t.id === id);
+    dragOverDay = null;
+    dragOverMinutes = null;
+    if (!task) return;
+
+    const target = e.currentTarget as HTMLElement;
+    const startMin = Math.max(
+      startHour * 60,
+      Math.min(endHour * 60 - 15, minutesFromEvent(e, target))
+    );
+    const endMin = Math.min(endHour * 60, startMin + task.durationMinutes);
+
+    const calUid = enabledCalendarList[0]?.uid ?? null;
+    const accountEmail = calUid ? getAccountForCalendar(calUid) : undefined;
+    if (!calUid || !accountEmail) return;
+
+    const dateStr = formatDate(day);
+    const summary = task.jiraKey ? `[${task.jiraKey}] ${task.title}` : task.title;
+    await createCalendarEvent(accountEmail, {
+      summary,
+      start_date: `${dateStr}T${formatMinutesToTime(startMin)}:00`,
+      end_date: `${dateStr}T${formatMinutesToTime(endMin)}:00`,
+      description: task.jiraUrl ?? null,
+      url: task.jiraUrl ?? null,
+      calendar_name: calUid,
+      is_focus_time: false,
+      color_id: null,
+    });
+    removeSidebarTask(task.id);
+    await loadWeekEvents();
+  }
 
   function handleEventClick(event: CalendarEvent, e: MouseEvent) {
     e.stopPropagation();
@@ -337,7 +462,10 @@
   });
 
   function formatDate(d: Date): string {
-    return d.toISOString().split("T")[0];
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
   }
 
   function formatDayHeader(d: Date): string {
@@ -628,20 +756,54 @@
 
 <svelte:window onmousemove={handleMouseMove} onmouseup={handleMouseUp} />
 
-<div class="calendar-view" class:dragging={!!dragState}>
-  <div class="cal-header">
+<div class="calendar-view" class:dragging={!!dragState} class:resizing-sidebar={!!sidebarResize}>
+  <div class="cal-body" style="--sidebar-width: {sidebarWidth}px">
+    {#if !sidebarCollapsed}
+      <CalendarSidebar onAfterSchedule={loadWeekEvents} />
+      <div
+        class="sidebar-resizer"
+        class:active={!!sidebarResize}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+        aria-valuenow={sidebarWidth}
+        aria-valuemin={SIDEBAR_MIN}
+        aria-valuemax={SIDEBAR_MAX}
+        tabindex="0"
+        onmousedown={startSidebarResize}
+        onkeydown={onSidebarResizeKey}
+      ></div>
+    {/if}
+    <div class="cal-main">
+  <div class="cal-header" class:no-sidebar={sidebarCollapsed} data-tauri-drag-region>
     <div class="cal-nav">
-      <button class="nav-btn" onclick={() => navigateWeek(-1)}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
+      <button class="nav-btn sidebar-toggle" onclick={toggleSidebar} title={sidebarCollapsed ? "Show tasks" : "Hide tasks"} aria-label="Toggle tasks sidebar">
+        {#if sidebarCollapsed}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <line x1="9" y1="3" x2="9" y2="21" />
+          </svg>
+        {:else}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <line x1="9" y1="3" x2="9" y2="21" />
+            <line x1="6" y1="9" x2="6" y2="15" />
+          </svg>
+        {/if}
       </button>
       <button class="today-btn" onclick={goToToday}>Today</button>
-      <button class="nav-btn" onclick={() => navigateWeek(1)}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </button>
+      <div class="arrow-pair">
+        <button class="nav-btn" onclick={() => navigateWeek(-1)} aria-label="Previous week">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+        <button class="nav-btn" onclick={() => navigateWeek(1)} aria-label="Next week">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
       <h2 class="cal-title">
         {weekStart.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
       </h2>
@@ -650,18 +812,6 @@
       <div class="view-toggle">
         <button class:active={viewMode === "week"} onclick={() => (viewMode = "week")}>Week</button>
         <button class:active={viewMode === "day"} onclick={() => (viewMode = "day")}>Day</button>
-      </div>
-      <div class="zoom-controls">
-        <button class="zoom-btn" onclick={zoomOut} disabled={zoomIndex === 0} title="Zoom out">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
-        <button class="zoom-btn" onclick={zoomIn} disabled={zoomIndex === ZOOM_STEPS.length - 1} title="Zoom in">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
       </div>
       <div class="filter-anchor">
         <button class="nav-btn" onclick={() => showCalendarMenu = !showCalendarMenu} title="Calendars &amp; Settings">
@@ -725,19 +875,37 @@
               <p class="connect-error">{connectError}</p>
             {/if}
             <div class="filter-divider"></div>
-            <div class="day-range-row">
-              <span class="day-range-label">Day range</span>
-              <select class="day-range-select" value={startHour} onchange={(e) => saveConfig({ ...$config, day_start_hour: +e.currentTarget.value })}>
-                {#each Array.from({ length: 12 }, (_, i) => i) as h}
-                  <option value={h}>{formatHour(h)}</option>
-                {/each}
-              </select>
-              <span class="day-range-sep">–</span>
-              <select class="day-range-select" value={endHour} onchange={(e) => saveConfig({ ...$config, day_end_hour: +e.currentTarget.value })}>
-                {#each Array.from({ length: 12 }, (_, i) => i + 13) as h}
-                  <option value={h}>{formatHour(h)}</option>
-                {/each}
-              </select>
+            <div class="menu-row">
+              <span class="menu-row-label">Day range</span>
+              <div class="menu-row-control">
+                <select class="day-range-select" value={startHour} onchange={(e) => saveConfig({ ...$config, day_start_hour: +e.currentTarget.value })}>
+                  {#each Array.from({ length: 12 }, (_, i) => i) as h}
+                    <option value={h}>{formatHour(h)}</option>
+                  {/each}
+                </select>
+                <span class="day-range-sep">–</span>
+                <select class="day-range-select" value={endHour} onchange={(e) => saveConfig({ ...$config, day_end_hour: +e.currentTarget.value })}>
+                  {#each Array.from({ length: 12 }, (_, i) => i + 13) as h}
+                    <option value={h}>{formatHour(h)}</option>
+                  {/each}
+                </select>
+              </div>
+            </div>
+            <div class="menu-row">
+              <span class="menu-row-label">Zoom</span>
+              <div class="menu-row-control zoom-stepper">
+                <button class="stepper-btn" onclick={zoomOut} disabled={zoomIndex === 0} aria-label="Zoom out">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </button>
+                <span class="stepper-value">{zoomIndex + 1} / {ZOOM_STEPS.length}</span>
+                <button class="stepper-btn" onclick={zoomIn} disabled={zoomIndex === ZOOM_STEPS.length - 1} aria-label="Zoom in">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="filter-divider"></div>
             <div class="theme-row">
@@ -757,15 +925,28 @@
                 </svg>
               </button>
             </div>
+            <div class="filter-divider"></div>
+            <button class="menu-action" onclick={() => { showCalendarMenu = false; onNavigate?.("edit"); }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
+              </svg>
+              <span>Code Mode</span>
+              <span class="menu-action-shortcut">⌘2</span>
+            </button>
+            <button class="menu-action" onclick={() => { showCalendarMenu = false; onNavigate?.("settings"); }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
+              </svg>
+              <span>Settings</span>
+              <span class="menu-action-shortcut">⌘,</span>
+            </button>
           </div>
         {/if}
       </div>
     </div>
   </div>
 
-  <div class="cal-body">
-    <CalendarSidebar onScheduleActive={handleSidebarSchedule} />
-    <div class="cal-main">
   {#if !hasAnyAccounts}
     <div class="empty-state">
       <div class="empty-icon">
@@ -862,10 +1043,28 @@
         <div class="days-container">
           {#each viewMode === "week" ? weekDays : [currentDate] as day, dayIndex}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <div class="day-column" class:today={isToday(day)} style="padding-top: {HOUR_HEIGHT * GRID_OFFSET / 60}px" role="button" tabindex="-1" onmousedown={(e) => handleDayMouseDown(day, e)}>
+            <div
+              class="day-column"
+              class:today={isToday(day)}
+              class:drop-target={dragOverDay === formatDate(day)}
+              style="padding-top: {HOUR_HEIGHT * GRID_OFFSET / 60}px"
+              role="button"
+              tabindex="-1"
+              onmousedown={(e) => handleDayMouseDown(day, e)}
+              ondragover={(e) => handleDayDragOver(day, e)}
+              ondragleave={() => handleDayDragLeave(day)}
+              ondrop={(e) => handleDayDrop(day, e)}
+            >
               {#each HOURS as _hour}
                 <div class="hour-slot" style="height: {HOUR_HEIGHT}px"></div>
               {/each}
+
+              {#if dragOverDay === formatDate(day) && dragOverMinutes !== null}
+                {@const top = ((dragOverMinutes - startHour * 60) / 60) * HOUR_HEIGHT + (HOUR_HEIGHT * GRID_OFFSET / 60)}
+                <div class="drop-indicator" style="top: {top}px">
+                  <span class="drop-indicator-time">{formatMinutesToTime(dragOverMinutes)}</span>
+                </div>
+              {/if}
 
               {#if nowMinutesCurrent >= startHour * 60 && nowMinutesCurrent <= endHour * 60}
                 {#if isToday(day)}
@@ -938,11 +1137,11 @@
     date={createEventData.date}
     startTime={createEventData.startTime}
     endTime={createEventData.endTime}
-    initialSummary={sidebarPrefillSummary}
+    initialSummary=""
     calendars={enabledCalendarList}
     defaultCalendarUid={enabledCalendarList[0]?.uid ?? null}
     onSave={handleCreateEvent}
-    onClose={() => { createEventData = null; sidebarPrefillSummary = ""; }}
+    onClose={() => { createEventData = null; }}
   />
 {/if}
 
@@ -968,8 +1167,52 @@
   .cal-body {
     flex: 1;
     display: flex;
-    gap: 16px;
+    gap: 8px;
     min-height: 0;
+  }
+
+  .sidebar-resizer {
+    flex: 0 0 6px;
+    position: relative;
+    cursor: col-resize;
+    align-self: stretch;
+    background: transparent;
+    transition: background 120ms var(--ease-out);
+    border-radius: 3px;
+  }
+
+  .sidebar-resizer::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 1px;
+    height: 28px;
+    background: var(--border-default);
+    border-radius: 1px;
+    transition: background 120ms var(--ease-out), height 160ms var(--ease-out), width 120ms var(--ease-out);
+  }
+
+  .sidebar-resizer:hover::before,
+  .sidebar-resizer:focus-visible::before,
+  .sidebar-resizer.active::before {
+    background: var(--accent-blue);
+    height: 44px;
+    width: 2px;
+  }
+
+  .sidebar-resizer:focus-visible {
+    outline: none;
+  }
+
+  .calendar-view.resizing-sidebar {
+    cursor: col-resize;
+    user-select: none;
+  }
+
+  .calendar-view.resizing-sidebar * {
+    user-select: none;
   }
 
   .cal-main {
@@ -983,19 +1226,41 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    gap: 24px;
+    padding: 9px 16px 9px 16px;
+    margin: 0 -24px 6px;
+    min-height: 50px;
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+
+  /* When sidebar is collapsed, cal-main spans full width — clear the traffic lights */
+  .cal-header.no-sidebar {
+    padding-left: 90px;
+  }
+
+  .cal-header > *,
+  .cal-header button,
+  .cal-header select,
+  .cal-header input,
+  .cal-header h2,
+  .cal-header .arrow-pair,
+  .cal-header .view-toggle,
+  .cal-header .filter-anchor {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
   }
 
   .cal-nav {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
   }
 
   .cal-right {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 12px;
   }
 
   .cal-pills {
@@ -1040,18 +1305,24 @@
     background: var(--accent-blue);
   }
 
-  .day-range-row {
+  .menu-row {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     padding: 6px 10px;
   }
 
-  .day-range-label {
+  .menu-row-label {
     font-size: 11px;
     font-weight: 500;
     color: var(--text-tertiary);
     margin-right: auto;
+  }
+
+  .menu-row-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .day-range-select {
@@ -1068,6 +1339,47 @@
   .day-range-sep {
     font-size: 11px;
     color: var(--text-tertiary);
+  }
+
+  .zoom-stepper {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    padding: 2px;
+    gap: 0;
+  }
+
+  .stepper-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out);
+  }
+
+  .stepper-btn:hover:not(:disabled) {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .stepper-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .stepper-value {
+    min-width: 36px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    user-select: none;
   }
 
   .theme-row {
@@ -1103,34 +1415,44 @@
     background: var(--bg-hover);
   }
 
-  .zoom-controls {
-    display: flex;
-    gap: 2px;
-  }
-
-  .zoom-btn {
+  .menu-action {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border: 1px solid var(--border-default);
+    gap: 10px;
+    width: 100%;
+    padding: 7px 10px;
+    border: none;
     background: transparent;
-    border-radius: var(--radius-sm);
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
     cursor: pointer;
-    transition: all 0.12s var(--ease-out);
+    border-radius: 6px;
+    transition: background 0.12s var(--ease-out), color 0.12s var(--ease-out);
   }
 
-  .zoom-btn:hover:not(:disabled) {
-    color: var(--text-primary);
+  .menu-action:hover {
     background: var(--bg-hover);
-    border-color: var(--border-strong);
+    color: var(--text-primary);
   }
 
-  .zoom-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
+  .menu-action svg {
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+  }
+
+  .menu-action:hover svg {
+    color: var(--text-primary);
+  }
+
+  .menu-action-shortcut {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    letter-spacing: 0.02em;
   }
 
   .filter-anchor {
@@ -1323,18 +1645,19 @@
     z-index: 20;
   }
 
+  /* Unified 32px control row — macOS Calendar inspired */
   .nav-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 32px;
     height: 32px;
-    border: 1px solid var(--border-strong);
-    background: var(--bg-surface);
-    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-md);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.15s var(--ease-out);
+    transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out);
   }
 
   .nav-btn:hover {
@@ -1342,52 +1665,70 @@
     color: var(--text-primary);
   }
 
+  .arrow-pair {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  .arrow-pair .nav-btn {
+    width: 28px;
+    border-radius: 6px;
+  }
+
   .today-btn {
-    padding: 6px 14px;
-    border: 1px solid var(--border-strong);
-    background: var(--bg-surface);
-    border-radius: var(--radius-sm);
+    height: 32px;
+    padding: 0 16px;
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    border-radius: var(--radius-md);
     font-family: var(--font-body);
     font-size: 13px;
     font-weight: 500;
+    line-height: 1;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.15s var(--ease-out);
+    transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out), border-color 0.15s var(--ease-out);
   }
 
   .today-btn:hover {
     background: var(--bg-hover);
+    border-color: var(--border-default);
     color: var(--text-primary);
   }
 
   .cal-title {
     font-family: var(--font-display);
-    font-size: 19px;
-    font-weight: 700;
-    margin: 0 0 0 10px;
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0 0 0 20px;
     color: var(--text-primary);
-    letter-spacing: -0.03em;
+    letter-spacing: -0.025em;
+    line-height: 32px;
     white-space: nowrap;
   }
 
-
   .view-toggle {
-    display: flex;
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
     gap: 2px;
     background: var(--bg-surface);
-    border-radius: 7px;
-    padding: 2px;
-    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: 3px;
+    border: 1px solid var(--border-subtle);
   }
 
   .view-toggle button {
-    padding: 5px 12px;
+    height: 24px;
+    padding: 0 14px;
     border: none;
     background: transparent;
-    border-radius: 5px;
+    border-radius: 6px;
     font-family: var(--font-body);
     font-size: 12px;
     font-weight: 500;
+    line-height: 1;
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.15s var(--ease-out);
@@ -1398,8 +1739,9 @@
   }
 
   .view-toggle button.active {
-    background: var(--bg-hover);
+    background: var(--bg-elevated);
     color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
   }
 
   .empty-state {
@@ -1685,12 +2027,14 @@
   }
 
   .allday-cell {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     display: flex;
     flex-wrap: wrap;
     gap: 2px;
     padding: 3px 2px;
     border-right: 1px solid var(--border-subtle);
+    overflow: hidden;
   }
 
   .allday-cell:last-child {
@@ -1709,7 +2053,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
     max-width: 100%;
+    flex: 0 1 100%;
     border-left: 2px solid transparent;
     transition: filter 0.12s var(--ease-out);
   }
@@ -1727,6 +2073,12 @@
     letter-spacing: 0.04em;
     opacity: 0.5;
     padding: 2px 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    max-width: 100%;
+    flex: 0 1 100%;
   }
 
   .day-headers {
@@ -1853,6 +2205,32 @@
 
   .day-column.today {
     background: var(--today-tint);
+  }
+
+  .day-column.drop-target {
+    background: var(--accent-blue-dim);
+  }
+
+  .drop-indicator {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    height: 0;
+    border-top: 2px dashed var(--accent-blue);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  .drop-indicator-time {
+    position: absolute;
+    top: -10px;
+    left: 4px;
+    padding: 1px 5px;
+    background: var(--accent-blue);
+    color: white;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    border-radius: 3px;
   }
 
   .now-line {

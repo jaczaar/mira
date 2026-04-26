@@ -331,7 +331,7 @@
     border-radius: 4px;
     background: var(--accent-blue-dim);
     color: var(--accent-blue);
-    border: 1px solid rgba(91, 141, 239, 0.15);
+    border: 1px solid var(--accent-blue-dim);
   }
 
   .use-btn,
@@ -348,12 +348,12 @@
 
   .use-btn {
     background: var(--accent-blue-dim);
-    border-color: rgba(91, 141, 239, 0.2);
+    border-color: var(--accent-blue-dim);
     color: var(--accent-blue);
   }
 
   .use-btn:hover {
-    background: rgba(91, 141, 239, 0.25);
+    background: var(--accent-blue-glow);
   }
 
   .clear-btn {
@@ -514,12 +514,12 @@
 
   .link-btn {
     background: var(--accent-blue-dim);
-    border-color: rgba(91, 141, 239, 0.2);
+    border-color: var(--accent-blue-dim);
     color: var(--accent-blue);
   }
 
   .link-btn:hover:not(:disabled) {
-    background: rgba(91, 141, 239, 0.25);
+    background: var(--accent-blue-glow);
     box-shadow: var(--shadow-glow-blue);
   }
 

@@ -315,7 +315,7 @@
     border-radius: 4px;
     background: var(--accent-blue-dim);
     color: var(--accent-blue);
-    border: 1px solid rgba(91, 141, 239, 0.15);
+    border: 1px solid var(--accent-blue-dim);
   }
 
   .link-label {
@@ -374,12 +374,12 @@
 
   .act-btn.link {
     background: var(--accent-blue-dim);
-    border-color: rgba(91, 141, 239, 0.15);
+    border-color: var(--accent-blue-dim);
     color: var(--accent-blue);
   }
 
   .act-btn.link:hover {
-    background: rgba(91, 141, 239, 0.2);
+    background: var(--accent-blue-dim);
   }
 
   .act-btn.ghost {

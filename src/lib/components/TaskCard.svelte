@@ -337,12 +337,12 @@
 
   .act-btn.primary {
     background: var(--accent-blue-dim);
-    border-color: rgba(91, 141, 239, 0.2);
+    border-color: var(--accent-blue-dim);
     color: var(--accent-blue);
   }
 
   .act-btn.primary:hover {
-    background: rgba(91, 141, 239, 0.2);
+    background: var(--accent-blue-dim);
     box-shadow: 0 0 12px var(--accent-blue-dim);
   }
 

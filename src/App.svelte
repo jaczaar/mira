@@ -1,15 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { listen } from "@tauri-apps/api/event";
-  import Header from "./lib/components/Header.svelte";
-  import Dashboard from "./routes/Dashboard.svelte";
   import Calendar from "./routes/Calendar.svelte";
   import About from "./routes/About.svelte";
   import EditMode from "./routes/EditMode.svelte";
   import SettingsPage from "./routes/SettingsPage.svelte";
   import "./lib/stores/theme";
 
-  type Route = "dashboard" | "calendar" | "about" | "edit" | "settings";
+  type Route = "calendar" | "about" | "edit" | "settings";
   let currentRoute = $state<Route>("calendar");
 
   function navigate(route: Route) {
@@ -23,17 +21,20 @@
         navigate("calendar");
       } else if (e.key === "2") {
         e.preventDefault();
-        navigate("dashboard");
-      } else if (e.key === "3") {
-        e.preventDefault();
         navigate("edit");
+      } else if (e.key === ",") {
+        e.preventDefault();
+        navigate("settings");
       }
     }
   }
 
   onMount(() => {
     const unlisten = listen<string>("menu-navigate", (event) => {
-      navigate(event.payload as Route);
+      const route = event.payload as Route;
+      if (route === "calendar" || route === "about" || route === "edit" || route === "settings") {
+        navigate(route);
+      }
     });
 
     return () => {
@@ -46,53 +47,50 @@
 
 <main>
   <div class="content">
-    {#if currentRoute === "dashboard"}
-      <Dashboard />
-    {:else if currentRoute === "calendar"}
-      <Calendar />
+    {#if currentRoute === "calendar"}
+      <Calendar onNavigate={navigate} />
     {:else if currentRoute === "about"}
       <About />
     {:else if currentRoute === "edit"}
-      <EditMode />
+      <EditMode onNavigate={navigate} />
     {:else if currentRoute === "settings"}
-      <SettingsPage />
+      <SettingsPage onNavigate={navigate} />
     {/if}
   </div>
-  <Header {currentRoute} onNavigate={navigate} />
 </main>
 
 <style>
   :global(:root) {
-    --bg-base: #2c2c36;
-    --bg-surface: #34343f;
-    --bg-elevated: #3d3d4a;
-    --bg-hover: #474754;
-    --bg-active: #51515f;
+    --bg-base: #19191b;
+    --bg-surface: #212123;
+    --bg-elevated: #28282b;
+    --bg-hover: #2f2f33;
+    --bg-active: #38383d;
 
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-default: rgba(255, 255, 255, 0.12);
-    --border-strong: rgba(255, 255, 255, 0.2);
+    --border-subtle: rgba(232, 226, 213, 0.05);
+    --border-default: rgba(232, 226, 213, 0.09);
+    --border-strong: rgba(232, 226, 213, 0.16);
 
-    --text-primary: #e8e8ec;
-    --text-secondary: #a8a8b0;
-    --text-tertiary: #8e8e98;
-    --text-inverse: #121214;
+    --text-primary: #e3ded2;
+    --text-secondary: #9b978c;
+    --text-tertiary: #6d6a61;
+    --text-inverse: #14130f;
 
-    --accent-blue: #7cacf8;
-    --accent-blue-dim: rgba(124, 172, 248, 0.12);
-    --accent-blue-glow: rgba(124, 172, 248, 0.2);
-    --accent-purple: #b89eff;
-    --accent-purple-dim: rgba(184, 158, 255, 0.12);
-    --accent-purple-glow: rgba(184, 158, 255, 0.2);
-    --accent-green: #6ee7a0;
-    --accent-green-dim: rgba(110, 231, 160, 0.1);
-    --accent-amber: #f5d06b;
-    --accent-amber-dim: rgba(245, 208, 107, 0.1);
-    --accent-red: #f09090;
-    --accent-red-dim: rgba(240, 144, 144, 0.1);
+    --accent-blue: #8aa89a;
+    --accent-blue-dim: rgba(138, 168, 154, 0.10);
+    --accent-blue-glow: rgba(138, 168, 154, 0.18);
+    --accent-purple: #b39db0;
+    --accent-purple-dim: rgba(179, 157, 176, 0.10);
+    --accent-purple-glow: rgba(179, 157, 176, 0.18);
+    --accent-green: #94b497;
+    --accent-green-dim: rgba(148, 180, 151, 0.09);
+    --accent-amber: #d4b888;
+    --accent-amber-dim: rgba(212, 184, 136, 0.09);
+    --accent-red: #cf9a8c;
+    --accent-red-dim: rgba(207, 154, 140, 0.09);
 
-    --gradient-brand: linear-gradient(135deg, #7cacf8 0%, #b89eff 100%);
-    --gradient-surface: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+    --gradient-brand: linear-gradient(135deg, #8aa89a 0%, #b39db0 100%);
+    --gradient-surface: linear-gradient(180deg, rgba(232, 226, 213, 0.015) 0%, transparent 100%);
 
     --font-display: 'Outfit', sans-serif;
     --font-body: 'DM Sans', sans-serif;
@@ -104,67 +102,67 @@
     --radius-xl: 20px;
     --radius-full: 9999px;
 
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
-    --shadow-glow-blue: 0 0 24px rgba(124, 172, 248, 0.1);
-    --shadow-glow-purple: 0 0 24px rgba(184, 158, 255, 0.1);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.22);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.28);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.38);
+    --shadow-glow-blue: 0 0 24px rgba(138, 168, 154, 0.10);
+    --shadow-glow-purple: 0 0 24px rgba(179, 157, 176, 0.10);
 
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-    --header-shadow: 0 8px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
-    --header-hover: rgba(255, 255, 255, 0.06);
-    --header-active: rgba(255, 255, 255, 0.1);
-    --today-tint: rgba(124, 172, 248, 0.03);
-    --today-tint-strong: rgba(124, 172, 248, 0.02);
-    --day-header-bg: rgba(255, 255, 255, 0.01);
+    --header-shadow: 0 8px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(232, 226, 213, 0.04);
+    --header-hover: rgba(232, 226, 213, 0.04);
+    --header-active: rgba(232, 226, 213, 0.07);
+    --today-tint: rgba(138, 168, 154, 0.035);
+    --today-tint-strong: rgba(138, 168, 154, 0.022);
+    --day-header-bg: rgba(232, 226, 213, 0.008);
   }
 
   :global(:root.light) {
-      --bg-base: #f0f1f4;
-      --bg-surface: rgba(255, 255, 255, 0.82);
-      --bg-elevated: #ffffff;
-      --bg-hover: rgba(0, 0, 0, 0.05);
-      --bg-active: rgba(0, 0, 0, 0.08);
+      --bg-base: #f4f1ea;
+      --bg-surface: rgba(253, 250, 243, 0.82);
+      --bg-elevated: #fdfaf3;
+      --bg-hover: rgba(45, 40, 30, 0.04);
+      --bg-active: rgba(45, 40, 30, 0.07);
 
-      --border-subtle: rgba(0, 0, 0, 0.07);
-      --border-default: rgba(0, 0, 0, 0.12);
-      --border-strong: rgba(0, 0, 0, 0.18);
+      --border-subtle: rgba(45, 40, 30, 0.06);
+      --border-default: rgba(45, 40, 30, 0.11);
+      --border-strong: rgba(45, 40, 30, 0.17);
 
-      --text-primary: #1a1a1e;
-      --text-secondary: #4a4a54;
-      --text-tertiary: #71717a;
-      --text-inverse: #f0f0f2;
+      --text-primary: #1f1d18;
+      --text-secondary: #4d4a42;
+      --text-tertiary: #7a766c;
+      --text-inverse: #efece4;
 
-      --accent-blue: #3b7de9;
-      --accent-blue-dim: rgba(59, 125, 233, 0.1);
-      --accent-blue-glow: rgba(59, 125, 233, 0.16);
-      --accent-purple: #8b6cdf;
-      --accent-purple-dim: rgba(139, 108, 223, 0.1);
-      --accent-purple-glow: rgba(139, 108, 223, 0.16);
-      --accent-green: #2da562;
-      --accent-green-dim: rgba(45, 165, 98, 0.1);
-      --accent-amber: #c49a20;
-      --accent-amber-dim: rgba(196, 154, 32, 0.1);
-      --accent-red: #d44848;
-      --accent-red-dim: rgba(212, 72, 72, 0.08);
+      --accent-blue: #4f8473;
+      --accent-blue-dim: rgba(79, 132, 115, 0.09);
+      --accent-blue-glow: rgba(79, 132, 115, 0.14);
+      --accent-purple: #8a6e84;
+      --accent-purple-dim: rgba(138, 110, 132, 0.09);
+      --accent-purple-glow: rgba(138, 110, 132, 0.14);
+      --accent-green: #4f8a5e;
+      --accent-green-dim: rgba(79, 138, 94, 0.09);
+      --accent-amber: #a88440;
+      --accent-amber-dim: rgba(168, 132, 64, 0.09);
+      --accent-red: #b06450;
+      --accent-red-dim: rgba(176, 100, 80, 0.08);
 
-      --gradient-brand: linear-gradient(135deg, #3b7de9 0%, #8b6cdf 100%);
-      --gradient-surface: linear-gradient(180deg, rgba(0, 0, 0, 0.01) 0%, transparent 100%);
+      --gradient-brand: linear-gradient(135deg, #4f8473 0%, #8a6e84 100%);
+      --gradient-surface: linear-gradient(180deg, rgba(45, 40, 30, 0.012) 0%, transparent 100%);
 
-      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
-      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
-      --shadow-glow-blue: 0 0 24px rgba(59, 125, 233, 0.08);
-      --shadow-glow-purple: 0 0 24px rgba(139, 108, 223, 0.08);
+      --shadow-sm: 0 1px 2px rgba(45, 40, 30, 0.06);
+      --shadow-md: 0 4px 16px rgba(45, 40, 30, 0.08);
+      --shadow-lg: 0 8px 32px rgba(45, 40, 30, 0.12);
+      --shadow-glow-blue: 0 0 24px rgba(79, 132, 115, 0.08);
+      --shadow-glow-purple: 0 0 24px rgba(138, 110, 132, 0.08);
 
-      --header-shadow: 0 8px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.06);
-      --header-hover: rgba(0, 0, 0, 0.05);
-      --header-active: rgba(0, 0, 0, 0.08);
-      --today-tint: rgba(59, 125, 233, 0.05);
-      --today-tint-strong: rgba(59, 125, 233, 0.03);
-      --day-header-bg: rgba(0, 0, 0, 0.01);
+      --header-shadow: 0 8px 40px rgba(45, 40, 30, 0.08), 0 0 0 1px rgba(45, 40, 30, 0.06);
+      --header-hover: rgba(45, 40, 30, 0.05);
+      --header-active: rgba(45, 40, 30, 0.08);
+      --today-tint: rgba(79, 132, 115, 0.05);
+      --today-tint-strong: rgba(79, 132, 115, 0.03);
+      --day-header-bg: rgba(45, 40, 30, 0.012);
   }
 
   :global(html, body) {
@@ -250,7 +248,7 @@
 
   .content {
     flex: 1;
-    padding: 48px 4% 24px;
+    padding: 0 24px 24px;
     width: 100%;
     overflow-y: auto;
     animation: fadeInUp 0.4s var(--ease-out);

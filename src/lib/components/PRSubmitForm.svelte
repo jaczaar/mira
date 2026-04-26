@@ -145,7 +145,7 @@
     padding: 6px 12px;
     background: var(--accent-blue-dim);
     color: var(--accent-blue);
-    border: 1px solid rgba(91, 141, 239, 0.2);
+    border: 1px solid var(--accent-blue-dim);
     border-radius: var(--radius-sm);
     cursor: pointer;
     font-family: var(--font-body);
@@ -155,7 +155,7 @@
   }
 
   .btn-submit:hover:not(:disabled) {
-    background: rgba(91, 141, 239, 0.2);
+    background: var(--accent-blue-dim);
     box-shadow: var(--shadow-glow-blue);
   }
 

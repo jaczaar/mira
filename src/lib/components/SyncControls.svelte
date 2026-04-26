@@ -137,13 +137,13 @@
 
   .action-btn.sync {
     background: var(--accent-blue-dim);
-    border-color: rgba(91, 141, 239, 0.2);
+    border-color: var(--accent-blue-dim);
     color: var(--accent-blue);
   }
 
   .action-btn.sync:hover:not(:disabled) {
-    background: rgba(91, 141, 239, 0.2);
-    border-color: rgba(91, 141, 239, 0.35);
+    background: var(--accent-blue-dim);
+    border-color: var(--accent-blue-glow);
     box-shadow: var(--shadow-glow-blue);
   }
 
